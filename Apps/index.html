@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Use correct character set. -->
+    <meta charset="utf-8">
+    <!-- Tell IE to use the latest, best version. -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>昭君博物院</title>
+    <script src="../Build/Cesium/Cesium.js"></script>
+    <style>
+        @import url(../Build/Cesium/Widgets/widgets.css);
+
+        html,
+        body,
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .cesium-viewer-bottom {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cesiumContainer"></div>
+    <button onclick="locate()" style="position:absolute;left:5px;top:10px;">定位</button>
+    <script>
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+            geocoder: false,
+            homeButton: false,
+            sceneModePicker: false,
+            baseLayerPicker: true,
+            navigationHelpButton: false,
+            animation: false,
+            timeline: false,
+            fullscreenButton: false,
+            vrButton: false,
+        });
+        var tileset = new Cesium.Cesium3DTileset({
+            url: 'http://localhost:8082/tileset.json'
+        });
+        // 111.67986095, 40.70671168
+        tileset.readyPromise.then(function (tileset) {
+            var center = Cesium.Cartesian3.fromDegrees(111.67986095, 40.70671168);
+            var transform = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+            console.log('My transform', Cesium.Matrix4.toArray(transform).join(','));
+
+            viewer.scene.primitives.add(tileset);
+            viewer.zoomTo(tileset);
+            adjust(-1060);
+        }).otherwise(function (error) {
+            console.log(error);
+        });
+
+        function adjust(height) {
+            var cartographic = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
+            //var cartographic = new Cesium.Cartographic(111.666622034439, 40.7536481117267, 0);
+            var surface = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0.0);
+            var offset = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, height);
+            var translation = Cesium.Cartesian3.subtract(offset, surface, new Cesium.Cartesian3());
+            tileset.modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+
+            viewer.zoomTo(tileset, new Cesium.HeadingPitchRange(0.0, -0.5, tileset.boundingSphere.radius * 2.0));
+        }
+
+        function locate() {
+            if (viewer && tileset) {
+                viewer.zoomTo(tileset, new Cesium.HeadingPitchRange(0.0, -0.5, tileset.boundingSphere.radius * 2.0));
+            }
+        }
+    </script>
+</body>
+
+</html>
