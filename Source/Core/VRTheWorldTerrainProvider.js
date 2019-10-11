@@ -1,38 +1,19 @@
-define([
-        '../ThirdParty/when',
-        './Credit',
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './DeveloperError',
-        './Ellipsoid',
-        './Event',
-        './GeographicTilingScheme',
-        './getImagePixels',
-        './HeightmapTerrainData',
-        './Math',
-        './Rectangle',
-        './Resource',
-        './TerrainProvider',
-        './TileProviderError'
-    ], function(
-        when,
-        Credit,
-        defaultValue,
-        defined,
-        defineProperties,
-        DeveloperError,
-        Ellipsoid,
-        Event,
-        GeographicTilingScheme,
-        getImagePixels,
-        HeightmapTerrainData,
-        CesiumMath,
-        Rectangle,
-        Resource,
-        TerrainProvider,
-        TileProviderError) {
-    'use strict';
+import when from '../ThirdParty/when.js';
+import Credit from './Credit.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import DeveloperError from './DeveloperError.js';
+import Ellipsoid from './Ellipsoid.js';
+import Event from './Event.js';
+import GeographicTilingScheme from './GeographicTilingScheme.js';
+import getImagePixels from './getImagePixels.js';
+import HeightmapTerrainData from './HeightmapTerrainData.js';
+import CesiumMath from './Math.js';
+import Rectangle from './Rectangle.js';
+import Resource from './Resource.js';
+import TerrainProvider from './TerrainProvider.js';
+import TileProviderError from './TileProviderError.js';
 
     function DataRectangle(rectangle, maxLevel) {
         this.rectangle = rectangle;
@@ -267,7 +248,9 @@ define([
             },
             request : request
         });
-        var promise = resource.fetchImage();
+        var promise = resource.fetchImage({
+            preferImageBitmap: true
+        });
         if (!defined(promise)) {
             return undefined;
         }
@@ -355,5 +338,15 @@ define([
         return undefined;
     };
 
-    return VRTheWorldTerrainProvider;
-});
+    /**
+     * Makes sure we load availability data for a tile
+     *
+     * @param {Number} x The X coordinate of the tile for which to request geometry.
+     * @param {Number} y The Y coordinate of the tile for which to request geometry.
+     * @param {Number} level The level of the tile for which to request geometry.
+     * @returns {undefined|Promise} Undefined if nothing need to be loaded or a Promise that resolves when all required tiles are loaded
+     */
+    VRTheWorldTerrainProvider.prototype.loadTileDataAvailability = function(x, y, level) {
+        return undefined;
+    };
+export default VRTheWorldTerrainProvider;

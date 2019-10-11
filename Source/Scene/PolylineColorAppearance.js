@@ -1,23 +1,18 @@
-define([
-        '../Core/defaultValue',
-        '../Core/defineProperties',
-        '../Core/VertexFormat',
-        '../Shaders/Appearances/PerInstanceFlatColorAppearanceFS',
-        '../Shaders/Appearances/PolylineColorAppearanceVS',
-        '../Shaders/PolylineCommon',
-        './Appearance'
-    ], function(
-        defaultValue,
-        defineProperties,
-        VertexFormat,
-        PerInstanceFlatColorAppearanceFS,
-        PolylineColorAppearanceVS,
-        PolylineCommon,
-        Appearance) {
-    'use strict';
+import defaultValue from '../Core/defaultValue.js';
+import defineProperties from '../Core/defineProperties.js';
+import FeatureDetection from '../Core/FeatureDetection.js';
+import VertexFormat from '../Core/VertexFormat.js';
+import PerInstanceFlatColorAppearanceFS from '../Shaders/Appearances/PerInstanceFlatColorAppearanceFS.js';
+import PolylineColorAppearanceVS from '../Shaders/Appearances/PolylineColorAppearanceVS.js';
+import PolylineCommon from '../Shaders/PolylineCommon.js';
+import Appearance from './Appearance.js';
 
     var defaultVertexShaderSource = PolylineCommon + '\n' + PolylineColorAppearanceVS;
     var defaultFragmentShaderSource = PerInstanceFlatColorAppearanceFS;
+
+    if (!FeatureDetection.isInternetExplorer()) {
+        defaultVertexShaderSource = '#define CLIP_POLYLINE \n' + defaultVertexShaderSource;
+    }
 
     /**
      * An appearance for {@link GeometryInstance} instances with color attributes and
@@ -214,6 +209,4 @@ define([
      * @returns {Object} The render state.
      */
     PolylineColorAppearance.prototype.getRenderState = Appearance.prototype.getRenderState;
-
-    return PolylineColorAppearance;
-});
+export default PolylineColorAppearance;

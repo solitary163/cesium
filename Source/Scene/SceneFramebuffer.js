@@ -1,36 +1,17 @@
-define([
-        '../Core/Color',
-        '../Core/defined',
-        '../Core/destroyObject',
-        '../Core/PixelFormat',
-        '../Renderer/ClearCommand',
-        '../Renderer/Framebuffer',
-        '../Renderer/PixelDatatype',
-        '../Renderer/Renderbuffer',
-        '../Renderer/RenderbufferFormat',
-        '../Renderer/RenderState',
-        '../Renderer/Sampler',
-        '../Renderer/Texture',
-        '../Renderer/TextureMagnificationFilter',
-        '../Renderer/TextureMinificationFilter',
-        '../Renderer/TextureWrap'
-    ], function(
-        Color,
-        defined,
-        destroyObject,
-        PixelFormat,
-        ClearCommand,
-        Framebuffer,
-        PixelDatatype,
-        Renderbuffer,
-        RenderbufferFormat,
-        RenderState,
-        Sampler,
-        Texture,
-        TextureMagnificationFilter,
-        TextureMinificationFilter,
-        TextureWrap) {
-    'use strict';
+import Color from '../Core/Color.js';
+import defined from '../Core/defined.js';
+import destroyObject from '../Core/destroyObject.js';
+import PixelFormat from '../Core/PixelFormat.js';
+import ClearCommand from '../Renderer/ClearCommand.js';
+import Framebuffer from '../Renderer/Framebuffer.js';
+import PixelDatatype from '../Renderer/PixelDatatype.js';
+import Renderbuffer from '../Renderer/Renderbuffer.js';
+import RenderbufferFormat from '../Renderer/RenderbufferFormat.js';
+import Sampler from '../Renderer/Sampler.js';
+import Texture from '../Renderer/Texture.js';
+import TextureMagnificationFilter from '../Renderer/TextureMagnificationFilter.js';
+import TextureMinificationFilter from '../Renderer/TextureMinificationFilter.js';
+import TextureWrap from '../Renderer/TextureWrap.js';
 
     /**
      * @private
@@ -44,6 +25,9 @@ define([
         this._idFramebuffer = undefined;
 
         this._idClearColor = new Color(0.0, 0.0, 0.0, 0.0);
+
+        this._useHdr = undefined;
+
         this._clearCommand = new ClearCommand({
             color : new Color(0.0, 0.0, 0.0, 0.0),
             depth : 1.0,
@@ -71,22 +55,24 @@ define([
         post._depthStencilIdRenderbuffer = undefined;
     }
 
-    SceneFramebuffer.prototype.update = function(context, viewport) {
+    SceneFramebuffer.prototype.update = function(context, viewport, hdr) {
         var width = viewport.width;
         var height = viewport.height;
         var colorTexture = this._colorTexture;
-        if (defined(colorTexture) && colorTexture.width === width && colorTexture.height === height) {
+        if (defined(colorTexture) && colorTexture.width === width && colorTexture.height === height && hdr === this._useHdr) {
             return;
         }
 
         destroyResources(this);
+        this._useHdr = hdr;
 
+        var pixelDatatype = hdr ? (context.halfFloatingPointTexture ? PixelDatatype.HALF_FLOAT : PixelDatatype.FLOAT) : PixelDatatype.UNSIGNED_BYTE;
         this._colorTexture = new Texture({
             context : context,
             width : width,
             height : height,
             pixelFormat : PixelFormat.RGBA,
-            pixelDatatype : PixelDatatype.UNSIGNED_BYTE,
+            pixelDatatype : pixelDatatype,
             sampler : new Sampler({
                 wrapS : TextureWrap.CLAMP_TO_EDGE,
                 wrapT : TextureWrap.CLAMP_TO_EDGE,
@@ -198,6 +184,4 @@ define([
         destroyResources(this);
         return destroyObject(this);
     };
-
-    return SceneFramebuffer;
-});
+export default SceneFramebuffer;

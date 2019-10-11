@@ -1,24 +1,12 @@
-define([
-        '../ThirdParty/when',
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './Ellipsoid',
-        './Event',
-        './GeographicTilingScheme',
-        './HeightmapTerrainData',
-        './TerrainProvider'
-    ], function(
-        when,
-        defaultValue,
-        defined,
-        defineProperties,
-        Ellipsoid,
-        Event,
-        GeographicTilingScheme,
-        HeightmapTerrainData,
-        TerrainProvider) {
-    'use strict';
+import when from '../ThirdParty/when.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import Ellipsoid from './Ellipsoid.js';
+import Event from './Event.js';
+import GeographicTilingScheme from './GeographicTilingScheme.js';
+import HeightmapTerrainData from './HeightmapTerrainData.js';
+import TerrainProvider from './TerrainProvider.js';
 
     /**
      * A very simple {@link TerrainProvider} that produces geometry by tessellating an ellipsoidal
@@ -38,7 +26,7 @@ define([
      * @see TerrainProvider
      */
     function EllipsoidTerrainProvider(options) {
-        options = defaultValue(options, {});
+        options = defaultValue(options, defaultValue.EMPTY_OBJECT);
 
         this._tilingScheme = options.tilingScheme;
         if (!defined(this._tilingScheme)) {
@@ -189,5 +177,15 @@ define([
         return undefined;
     };
 
-    return EllipsoidTerrainProvider;
-});
+    /**
+     * Makes sure we load availability data for a tile
+     *
+     * @param {Number} x The X coordinate of the tile for which to request geometry.
+     * @param {Number} y The Y coordinate of the tile for which to request geometry.
+     * @param {Number} level The level of the tile for which to request geometry.
+     * @returns {undefined|Promise} Undefined if nothing need to be loaded or a Promise that resolves when all required tiles are loaded
+     */
+    EllipsoidTerrainProvider.prototype.loadTileDataAvailability = function(x, y, level) {
+        return undefined;
+    };
+export default EllipsoidTerrainProvider;

@@ -1,14 +1,6 @@
-define([
-        '../Core/Cartesian2',
-        '../Core/Check',
-        '../Renderer/PixelDatatype',
-        './ClippingPlaneCollection'
-    ], function(
-        Cartesian2,
-        Check,
-        PixelDatatype,
-        ClippingPlaneCollection) {
-    'use strict';
+import Cartesian2 from '../Core/Cartesian2.js';
+import Check from '../Core/Check.js';
+import ClippingPlaneCollection from './ClippingPlaneCollection.js';
 
     var textureResolutionScratch = new Cartesian2();
     /**
@@ -44,7 +36,7 @@ define([
             '    vec4 position = czm_windowToEyeCoordinates(fragCoord);\n' +
             '    vec3 clipNormal = vec3(0.0);\n' +
             '    vec3 clipPosition = vec3(0.0);\n' +
-            '    float clipAmount = 0.0;\n' +
+            '    float clipAmount;\n' + // For union planes, we want to get the min distance. So we set the initial value to the first plane distance in the loop below.
             '    float pixelWidth = czm_metersPerPixel(position);\n' +
             '    bool breakAndDiscard = false;\n' +
 
@@ -56,7 +48,7 @@ define([
             '        clipPosition = -clippingPlane.w * clipNormal;\n' +
 
             '        float amount = dot(clipNormal, (position.xyz - clipPosition)) / pixelWidth;\n' +
-            '        clipAmount = max(amount, clipAmount);\n' +
+            '        clipAmount = czm_branchFreeTernary(i == 0, amount, min(amount, clipAmount));\n' +
 
             '        if (amount <= 0.0)\n' +
             '        {\n' +
@@ -166,6 +158,4 @@ define([
             '}\n';
         return functionString;
     }
-
-    return getClippingFunction;
-});
+export default getClippingFunction;

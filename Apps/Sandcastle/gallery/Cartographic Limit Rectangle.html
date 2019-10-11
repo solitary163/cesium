@@ -8,15 +8,8 @@
     <meta name="cesium-sandcastle-labels" content="Showcases">
     <title>Cesium Demo</title>
     <script type="text/javascript" src="../Sandcastle-header.js"></script>
-    <script type="text/javascript" src="../../../ThirdParty/requirejs-2.1.20/require.js"></script>
-    <script type="text/javascript">
-        if(typeof require === 'function') {
-            require.config({
-                baseUrl : '../../../Source',
-                waitSeconds : 120
-            });
-        }
-    </script>
+    <script type="text/javascript" src="../../../Build/CesiumUnminified/Cesium.js" nomodule></script>
+    <script type="module" src="../load-cesium-es6.js"></script>
 </head>
 <body class="sandcastle-loading" data-sandcastle-bucket="bucket-requirejs.html">
 <style>
@@ -55,32 +48,27 @@ for (var i = 0; i < 10; i++) {
     }));
 }
 
-Sandcastle.addToolbarButton('Show/Hide Bounds', function() {
+Sandcastle.addToggleButton('Limit Enabled', true, function(checked) {
+    if (checked) {
+        viewer.scene.globe.cartographicLimitRectangle = coffeeBeltRectangle;
+    } else {
+        viewer.scene.globe.cartographicLimitRectangle = undefined;
+    }
+});
+
+Sandcastle.addToggleButton('Show Bounds', true, function(checked) {
     var rectanglesLength = rectangles.length;
     for (var i = 0; i < rectanglesLength; i++) {
         var rectangleEntity = rectangles[i];
-        rectangleEntity.show = !rectangleEntity.show;
+        rectangleEntity.show = checked;
     }
 });
-
-var limited = true;
-Sandcastle.addToolbarButton('Enable/Disable Limiter', function() {
-    if (limited) {
-        viewer.scene.globe.cartographicLimitRectangle = Cesium.Rectangle.MAX_VALUE;
-        limited = false;
-    } else {
-        viewer.scene.globe.cartographicLimitRectangle = coffeeBeltRectangle;
-        limited = true;
-    }
-});
-
 //Sandcastle_End
     Sandcastle.finishedLoading();
 }
 if (typeof Cesium !== 'undefined') {
+    window.startupCalled = true;
     startup(Cesium);
-} else if (typeof require === 'function') {
-    require(['Cesium'], startup);
 }
 </script>
 </body>

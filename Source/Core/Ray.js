@@ -1,14 +1,7 @@
-define([
-        './Cartesian3',
-        './defaultValue',
-        './defined',
-        './DeveloperError'
-    ], function(
-        Cartesian3,
-        defaultValue,
-        defined,
-        DeveloperError) {
-    'use strict';
+import Cartesian3 from './Cartesian3.js';
+import Check from './Check.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
 
     /**
      * Represents a ray that extends infinitely from the provided origin in the provided direction.
@@ -39,6 +32,25 @@ define([
     }
 
     /**
+     * Duplicates a Ray instance.
+     *
+     * @param {Ray} ray The ray to duplicate.
+     * @param {Ray} [result] The object onto which to store the result.
+     * @returns {Ray} The modified result parameter or a new Ray instance if one was not provided. (Returns undefined if ray is undefined)
+     */
+    Ray.clone = function(ray, result) {
+        if (!defined(ray)) {
+            return undefined;
+        }
+        if (!defined(result)) {
+            return new Ray(ray.origin, ray.direction);
+        }
+        result.origin = Cartesian3.clone(ray.origin);
+        result.direction = Cartesian3.clone(ray.direction);
+        return result;
+    };
+
+    /**
      * Computes the point along the ray given by r(t) = o + t*d,
      * where o is the origin of the ray and d is the direction.
      *
@@ -54,12 +66,8 @@ define([
      */
     Ray.getPoint = function(ray, t, result) {
         //>>includeStart('debug', pragmas.debug);
-        if (!defined(ray)){
-            throw new DeveloperError('ray is requred');
-        }
-        if (typeof t !== 'number') {
-            throw new DeveloperError('t is a required number');
-        }
+        Check.typeOf.object('ray', ray);
+        Check.typeOf.number('t', t);
         //>>includeEnd('debug');
 
         if (!defined(result)) {
@@ -69,6 +77,4 @@ define([
         result = Cartesian3.multiplyByScalar(ray.direction, t, result);
         return Cartesian3.add(ray.origin, result, result);
     };
-
-    return Ray;
-});
+export default Ray;

@@ -1,48 +1,24 @@
-define([
-        '../ThirdParty/when',
-        './Credit',
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './DeveloperError',
-        './Event',
-        './GeographicTilingScheme',
-        './GoogleEarthEnterpriseMetadata',
-        './GoogleEarthEnterpriseTerrainData',
-        './HeightmapTerrainData',
-        './JulianDate',
-        './Math',
-        './Rectangle',
-        './Request',
-        './RequestState',
-        './RequestType',
-        './Resource',
-        './RuntimeError',
-        './TaskProcessor',
-        './TileProviderError'
-    ], function(
-        when,
-        Credit,
-        defaultValue,
-        defined,
-        defineProperties,
-        DeveloperError,
-        Event,
-        GeographicTilingScheme,
-        GoogleEarthEnterpriseMetadata,
-        GoogleEarthEnterpriseTerrainData,
-        HeightmapTerrainData,
-        JulianDate,
-        CesiumMath,
-        Rectangle,
-        Request,
-        RequestState,
-        RequestType,
-        Resource,
-        RuntimeError,
-        TaskProcessor,
-        TileProviderError) {
-    'use strict';
+import when from '../ThirdParty/when.js';
+import Credit from './Credit.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import DeveloperError from './DeveloperError.js';
+import Event from './Event.js';
+import GeographicTilingScheme from './GeographicTilingScheme.js';
+import GoogleEarthEnterpriseMetadata from './GoogleEarthEnterpriseMetadata.js';
+import GoogleEarthEnterpriseTerrainData from './GoogleEarthEnterpriseTerrainData.js';
+import HeightmapTerrainData from './HeightmapTerrainData.js';
+import JulianDate from './JulianDate.js';
+import CesiumMath from './Math.js';
+import Rectangle from './Rectangle.js';
+import Request from './Request.js';
+import RequestState from './RequestState.js';
+import RequestType from './RequestType.js';
+import Resource from './Resource.js';
+import RuntimeError from './RuntimeError.js';
+import TaskProcessor from './TaskProcessor.js';
+import TileProviderError from './TileProviderError.js';
 
     var TerrainState = {
         UNKNOWN : 0,
@@ -116,7 +92,7 @@ define([
      * @see {@link http://www.w3.org/TR/cors/|Cross-Origin Resource Sharing}
      */
     function GoogleEarthEnterpriseTerrainProvider(options) {
-        options = defaultValue(options, {});
+        options = defaultValue(options, defaultValue.EMPTY_OBJECT);
 
         //>>includeStart('debug', pragmas.debug);
         if (!(defined(options.url) || defined(options.metadata))) {
@@ -580,6 +556,18 @@ define([
         return false;
     };
 
+    /**
+     * Makes sure we load availability data for a tile
+     *
+     * @param {Number} x The X coordinate of the tile for which to request geometry.
+     * @param {Number} y The Y coordinate of the tile for which to request geometry.
+     * @param {Number} level The level of the tile for which to request geometry.
+     * @returns {undefined|Promise} Undefined if nothing need to be loaded or a Promise that resolves when all required tiles are loaded
+     */
+    GoogleEarthEnterpriseTerrainProvider.prototype.loadTileDataAvailability = function(x, y, level) {
+        return undefined;
+    };
+
     //
     // Functions to handle imagery packets
     //
@@ -590,6 +578,4 @@ define([
             request: request
         });
     }
-
-    return GoogleEarthEnterpriseTerrainProvider;
-});
+export default GoogleEarthEnterpriseTerrainProvider;

@@ -1,10 +1,7 @@
-defineSuite([
-        'Core/Ray',
-        'Core/Cartesian3'
-    ], function(
-        Ray,
-        Cartesian3) {
-    'use strict';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { Ray } from '../../Source/Cesium.js';
+
+describe('Core/Ray', function() {
 
     it('default constructor create zero valued Ray', function() {
         var ray = new Ray();
@@ -26,6 +23,39 @@ defineSuite([
         var ray = new Ray(origin, direction);
         expect(ray.origin).toEqual(origin);
         expect(ray.direction).toEqual(Cartesian3.UNIT_X);
+    });
+
+    it('clone without a result parameter', function() {
+        var direction = Cartesian3.normalize(new Cartesian3(1, 2, 3), new Cartesian3());
+        var ray = new Ray(Cartesian3.UNIT_X, direction);
+        var returnedResult = Ray.clone(ray);
+        expect(ray).not.toBe(returnedResult);
+        expect(ray.origin).not.toBe(returnedResult.origin);
+        expect(ray.direction).not.toBe(returnedResult.direction);
+        expect(ray).toEqual(returnedResult);
+    });
+
+    it('clone with a result parameter', function() {
+        var direction = Cartesian3.normalize(new Cartesian3(1, 2, 3), new Cartesian3());
+        var ray = new Ray(Cartesian3.UNIT_X, direction);
+        var result = new Ray();
+        var returnedResult = Ray.clone(ray, result);
+        expect(ray).not.toBe(result);
+        expect(ray.origin).not.toBe(returnedResult.origin);
+        expect(ray.direction).not.toBe(returnedResult.direction);
+        expect(result).toBe(returnedResult);
+        expect(ray).toEqual(result);
+    });
+
+    it('clone works with a result parameter that is an input parameter', function() {
+        var direction = Cartesian3.normalize(new Cartesian3(1, 2, 3), new Cartesian3());
+        var ray = new Ray(Cartesian3.UNIT_X, direction);
+        var returnedResult = Ray.clone(ray, ray);
+        expect(ray).toBe(returnedResult);
+    });
+
+    it('clone returns undefined if ray is undefined', function() {
+        expect(Ray.clone()).toBeUndefined();
     });
 
     it('getPoint along ray works without a result parameter', function() {
