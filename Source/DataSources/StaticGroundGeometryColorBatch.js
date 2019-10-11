@@ -1,24 +1,12 @@
-define([
-        '../Core/AssociativeArray',
-        '../Core/Color',
-        '../Core/defined',
-        '../Core/DistanceDisplayCondition',
-        '../Core/DistanceDisplayConditionGeometryInstanceAttribute',
-        '../Core/ShowGeometryInstanceAttribute',
-        '../Scene/GroundPrimitive',
-        './BoundingSphereState',
-        './Property'
-    ], function(
-        AssociativeArray,
-        Color,
-        defined,
-        DistanceDisplayCondition,
-        DistanceDisplayConditionGeometryInstanceAttribute,
-        ShowGeometryInstanceAttribute,
-        GroundPrimitive,
-        BoundingSphereState,
-        Property) {
-    'use strict';
+import AssociativeArray from '../Core/AssociativeArray.js';
+import Color from '../Core/Color.js';
+import defined from '../Core/defined.js';
+import DistanceDisplayCondition from '../Core/DistanceDisplayCondition.js';
+import DistanceDisplayConditionGeometryInstanceAttribute from '../Core/DistanceDisplayConditionGeometryInstanceAttribute.js';
+import ShowGeometryInstanceAttribute from '../Core/ShowGeometryInstanceAttribute.js';
+import GroundPrimitive from '../Scene/GroundPrimitive.js';
+import BoundingSphereState from './BoundingSphereState.js';
+import Property from './Property.js';
 
     var colorScratch = new Color();
     var distanceDisplayConditionScratch = new DistanceDisplayCondition();
@@ -84,7 +72,6 @@ define([
         var removedCount = 0;
         var primitive = this.primitive;
         var primitives = this.primitives;
-        var attributes;
         var i;
 
         if (this.createPrimitive) {
@@ -96,21 +83,6 @@ define([
                         this.oldPrimitive = primitive;
                     } else {
                         primitives.remove(primitive);
-                    }
-                }
-
-                for (i = 0; i < geometriesLength; i++) {
-                    var geometryItem = geometries[i];
-                    var originalAttributes = geometryItem.attributes;
-                    attributes = this.attributes.get(geometryItem.id.id);
-
-                    if (defined(attributes)) {
-                        if (defined(originalAttributes.show)) {
-                            attributes.show = originalAttributes.show.value;
-                        }
-                        if (defined(originalAttributes.color)) {
-                            attributes.color = originalAttributes.color.value;
-                        }
                     }
                 }
 
@@ -151,7 +123,7 @@ define([
                 var updater = updatersWithAttributes[i];
                 var instance = this.geometry.get(updater.id);
 
-                attributes = this.attributes.get(instance.id.id);
+                var attributes = this.attributes.get(instance.id.id);
                 if (!defined(attributes)) {
                     attributes = primitive.getGeometryInstanceAttributes(instance.id);
                     this.attributes.set(instance.id.id, attributes);
@@ -214,6 +186,7 @@ define([
             var currentShow = attributes.show[0] === 1;
             if (show !== currentShow) {
                 attributes.show = ShowGeometryInstanceAttribute.toValue(show, attributes.show);
+                instance.attributes.show.value[0] = attributes.show[0];
             }
         }
         this.showsUpdated.removeAll();
@@ -356,6 +329,4 @@ define([
             batchesArray[i].removeAllPrimitives();
         }
     };
-
-    return StaticGroundGeometryColorBatch;
-});
+export default StaticGroundGeometryColorBatch;

@@ -1,20 +1,12 @@
-defineSuite([
-        'Core/Matrix4',
-        'Core/Cartesian3',
-        'Core/Cartesian4',
-        'Core/Math',
-        'Core/Matrix3',
-        'Core/Quaternion',
-        'Core/TranslationRotationScale'
-    ], function(
-        Matrix4,
-        Cartesian3,
-        Cartesian4,
-        CesiumMath,
-        Matrix3,
-        Quaternion,
-        TranslationRotationScale) {
-    'use strict';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { Cartesian4 } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { Matrix3 } from '../../Source/Cesium.js';
+import { Matrix4 } from '../../Source/Cesium.js';
+import { Quaternion } from '../../Source/Cesium.js';
+import { TranslationRotationScale } from '../../Source/Cesium.js';
+
+describe('Core/Matrix4', function() {
 
     it('default constructor creates values array with all zeros.', function() {
         var matrix = new Matrix4();
@@ -956,11 +948,11 @@ defineSuite([
         expect(expected).toEqual(returnedResult);
     });
 
-    it('getRotation works', function() {
+    it('getMatrix3 works', function() {
         var matrix = new Matrix4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
         var expected = new Matrix3(1, 2, 3, 5, 6, 7, 9, 10, 11);
         var result = new Matrix3();
-        var returnedResult = Matrix4.getRotation(matrix, result);
+        var returnedResult = Matrix4.getMatrix3(matrix, result);
         expect(returnedResult).toBe(result);
         expect(expected).toEqual(returnedResult);
     });
@@ -988,6 +980,38 @@ defineSuite([
         matrix = Matrix4.multiplyByUniformScale(matrix, 0.0, matrix);
         var expected = Matrix4.fromTranslation(new Cartesian3(-1.0, -2.0, -3.0));
         expected = Matrix4.multiplyByUniformScale(expected, 0.0, expected);
+
+        var result = Matrix4.inverse(matrix, new Matrix4());
+        expect(expected).toEqualEpsilon(result, CesiumMath.EPSILON20);
+    });
+
+    it('inverse behaves acceptably with near single precision zero scale matrix', function() {
+        var trs = new TranslationRotationScale(new Cartesian3(0.0, 0.0, 0.0),
+        Quaternion.fromAxisAngle(Cartesian3.UNIT_X, 0.0),
+        new Cartesian3(1.0e-7, 1.0e-7, 1.1e-7));
+
+        var matrix = Matrix4.fromTranslationRotationScale(trs);
+
+        var expected = new Matrix4(1e7, 0, 0, 0,
+                                   0, 1e7, 0, 0,
+                                   0, 0, (1.0/1.1)*1e7, 0,
+                                   0, 0, 0, 1);
+
+        var result = Matrix4.inverse(matrix, new Matrix4());
+        expect(expected).toEqualEpsilon(result, CesiumMath.EPSILON15);
+    });
+
+    it('inverse behaves acceptably with single precision zero scale matrix', function() {
+        var trs = new TranslationRotationScale(new Cartesian3(0.0, 0.0, 0.0),
+        Quaternion.fromAxisAngle(Cartesian3.UNIT_X, 0.0),
+        new Cartesian3(1.8e-8, 1.2e-8, 1.2e-8));
+
+        var matrix = Matrix4.fromTranslationRotationScale(trs);
+
+        var expected = new Matrix4(0, 0, 0, -matrix[12],
+                                   0, 0, 0, -matrix[13],
+                                   0, 0, 0, -matrix[14],
+                                   0, 0, 0, 1);
 
         var result = Matrix4.inverse(matrix, new Matrix4());
         expect(expected).toEqualEpsilon(result, CesiumMath.EPSILON20);
@@ -1511,9 +1535,9 @@ defineSuite([
         }).toThrowDeveloperError();
     });
 
-    it('getRotation throws without matrix parameter', function() {
+    it('getMatrix3 throws without matrix parameter', function() {
         expect(function() {
-            Matrix4.getRotation(undefined);
+            Matrix4.getMatrix3(undefined);
         }).toThrowDeveloperError();
     });
 
@@ -1686,9 +1710,9 @@ defineSuite([
         }).toThrowDeveloperError();
     });
 
-    it('getRotation throws without result parameter', function() {
+    it('getMatrix3 throws without result parameter', function() {
         expect(function() {
-            Matrix4.getRotation(new Matrix4());
+            Matrix4.getMatrix3(new Matrix4());
         }).toThrowDeveloperError();
     });
 

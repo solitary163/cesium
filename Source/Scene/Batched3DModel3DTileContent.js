@@ -1,58 +1,24 @@
-define([
-        '../Core/Cartesian3',
-        '../Core/Color',
-        '../Core/ComponentDatatype',
-        '../Core/defaultValue',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/deprecationWarning',
-        '../Core/destroyObject',
-        '../Core/DeveloperError',
-        '../Core/FeatureDetection',
-        '../Core/getBaseUri',
-        '../Core/getStringFromTypedArray',
-        '../Core/Matrix4',
-        '../Core/RequestType',
-        '../Core/RuntimeError',
-        '../Renderer/Pass',
-        './Axis',
-        './Cesium3DTileBatchTable',
-        './Cesium3DTileFeature',
-        './Cesium3DTileFeatureTable',
-        './ClassificationModel',
-        './Model',
-        './ModelUtility'
-    ], function(
-        Cartesian3,
-        Color,
-        ComponentDatatype,
-        defaultValue,
-        defined,
-        defineProperties,
-        deprecationWarning,
-        destroyObject,
-        DeveloperError,
-        FeatureDetection,
-        getBaseUri,
-        getStringFromTypedArray,
-        Matrix4,
-        RequestType,
-        RuntimeError,
-        Pass,
-        Axis,
-        Cesium3DTileBatchTable,
-        Cesium3DTileFeature,
-        Cesium3DTileFeatureTable,
-        ClassificationModel,
-        Model,
-        ModelUtility) {
-    'use strict';
-
-    // Bail out if the browser doesn't support typed arrays, to prevent the setup function
-    // from failing, since we won't be able to create a WebGL context anyway.
-    if (!FeatureDetection.supportsTypedArrays()) {
-        return {};
-    }
+import Cartesian3 from '../Core/Cartesian3.js';
+import Color from '../Core/Color.js';
+import ComponentDatatype from '../Core/ComponentDatatype.js';
+import defaultValue from '../Core/defaultValue.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import deprecationWarning from '../Core/deprecationWarning.js';
+import destroyObject from '../Core/destroyObject.js';
+import DeveloperError from '../Core/DeveloperError.js';
+import getStringFromTypedArray from '../Core/getStringFromTypedArray.js';
+import Matrix4 from '../Core/Matrix4.js';
+import RequestType from '../Core/RequestType.js';
+import RuntimeError from '../Core/RuntimeError.js';
+import Pass from '../Renderer/Pass.js';
+import Axis from './Axis.js';
+import Cesium3DTileBatchTable from './Cesium3DTileBatchTable.js';
+import Cesium3DTileFeature from './Cesium3DTileFeature.js';
+import Cesium3DTileFeatureTable from './Cesium3DTileFeatureTable.js';
+import ClassificationModel from './ClassificationModel.js';
+import Model from './Model.js';
+import ModelUtility from './ModelUtility.js';
 
     /**
      * Represents the contents of a
@@ -355,10 +321,10 @@ define([
             primitive : tileset
         };
 
-        content._rtcCenterTransform = Matrix4.clone(Matrix4.IDENTITY);
+        content._rtcCenterTransform = Matrix4.IDENTITY;
         var rtcCenter = featureTable.getGlobalProperty('RTC_CENTER', ComponentDatatype.FLOAT, 3);
         if (defined(rtcCenter)) {
-            content._rtcCenterTransform = Matrix4.fromTranslation(Cartesian3.fromArray(rtcCenter), content._rtcCenterTransform);
+            content._rtcCenterTransform = Matrix4.fromTranslation(Cartesian3.fromArray(rtcCenter));
         }
 
         content._contentModelMatrix = Matrix4.multiply(tile.computedTransform, content._rtcCenterTransform, new Matrix4());
@@ -384,7 +350,12 @@ define([
                 uniformMapLoaded : batchTable.getUniformMapCallback(),
                 pickIdLoaded : getPickIdCallback(content),
                 addBatchIdToGeneratedShaders : (batchLength > 0), // If the batch table has values in it, generated shaders will need a batchId attribute
-                pickObject : pickObject
+                pickObject : pickObject,
+                imageBasedLightingFactor : tileset.imageBasedLightingFactor,
+                lightColor : tileset.lightColor,
+                luminanceAtZenith : tileset.luminanceAtZenith,
+                sphericalHarmonicCoefficients : tileset.sphericalHarmonicCoefficients,
+                specularEnvironmentMaps : tileset.specularEnvironmentMaps
             });
         } else {
             // This transcodes glTF to an internal representation for geometry so we can take advantage of the re-batching of vector data.
@@ -445,7 +416,14 @@ define([
     };
 
     Batched3DModel3DTileContent.prototype.applyStyle = function(style) {
-        this._batchTable.applyStyle(style);
+        if (this.featuresLength === 0) {
+            var hasColorStyle = defined(style) && defined(style.color);
+            var hasShowStyle = defined(style) && defined(style.show);
+            this._model.color = hasColorStyle ? style.color.evaluateColor(undefined, this._model.color) : Color.clone(Color.WHITE, this._model.color);
+            this._model.show = hasShowStyle ? style.show.evaluate(undefined) : true;
+        } else {
+            this._batchTable.applyStyle(style);
+        }
     };
 
     Batched3DModel3DTileContent.prototype.update = function(tileset, frameState) {
@@ -460,11 +438,17 @@ define([
         this._model.modelMatrix = this._contentModelMatrix;
 
         this._model.shadows = this._tileset.shadows;
+        this._model.imageBasedLightingFactor = this._tileset.imageBasedLightingFactor;
+        this._model.lightColor = this._tileset.lightColor;
+        this._model.luminanceAtZenith = this._tileset.luminanceAtZenith;
+        this._model.sphericalHarmonicCoefficients = this._tileset.sphericalHarmonicCoefficients;
+        this._model.specularEnvironmentMaps = this._tileset.specularEnvironmentMaps;
         this._model.debugWireframe = this._tileset.debugWireframe;
 
         // Update clipping planes
         var tilesetClippingPlanes = this._tileset.clippingPlanes;
-        if (this._tile.clippingPlanesDirty && defined(tilesetClippingPlanes)) {
+        this._model.clippingPlanesOriginMatrix = this._tileset.clippingPlanesOriginMatrix;
+        if (defined(tilesetClippingPlanes) && this._tile.clippingPlanesDirty) {
             // Dereference the clipping planes from the model if they are irrelevant.
             // Link/Dereference directly to avoid ownership checks.
             // This will also trigger synchronous shader regeneration to remove or add the clipping plane and color blending code.
@@ -495,6 +479,4 @@ define([
         this._batchTable = this._batchTable && this._batchTable.destroy();
         return destroyObject(this);
     };
-
-    return Batched3DModel3DTileContent;
-});
+export default Batched3DModel3DTileContent;

@@ -1,14 +1,7 @@
-define([
-        '../Core/Cartesian3',
-        '../Core/defined',
-        '../Core/Math',
-        './SceneMode'
-    ], function(
-        Cartesian3,
-        defined,
-        CesiumMath,
-        SceneMode) {
-    'use strict';
+import Cartesian3 from '../Core/Cartesian3.js';
+import defined from '../Core/defined.js';
+import CesiumMath from '../Core/Math.js';
+import SceneMode from './SceneMode.js';
 
     /**
      * Blends the atmosphere to geometry far from the camera for horizon views. Allows for additional
@@ -49,7 +42,7 @@ define([
          * @type {Number}
          * @default 0.1
          */
-        this.minimumBrightness = 0.1;
+        this.minimumBrightness = 0.03;
     }
 
     // These values were found by sampling the density at certain views and finding at what point culled tiles impacted the view at the horizon.
@@ -143,6 +136,4 @@ define([
         frameState.fog.sse = this.screenSpaceErrorFactor;
         frameState.fog.minimumBrightness = this.minimumBrightness;
     };
-
-    return Fog;
-});
+export default Fog;

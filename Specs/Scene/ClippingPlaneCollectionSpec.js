@@ -1,42 +1,22 @@
-defineSuite([
-        'Scene/ClippingPlaneCollection',
-        'Core/AttributeCompression',
-        'Core/BoundingSphere',
-        'Core/Cartesian2',
-        'Core/Cartesian3',
-        'Core/Cartesian4',
-        'Core/Color',
-        'Core/Intersect',
-        'Core/Math',
-        'Core/Matrix4',
-        'Core/PixelFormat',
-        'Core/Plane',
-        'Renderer/PixelDatatype',
-        'Renderer/TextureMagnificationFilter',
-        'Renderer/TextureMinificationFilter',
-        'Renderer/TextureWrap',
-        'Scene/ClippingPlane',
-        'Specs/createScene'
-    ], function(
-        ClippingPlaneCollection,
-        AttributeCompression,
-        BoundingSphere,
-        Cartesian2,
-        Cartesian3,
-        Cartesian4,
-        Color,
-        Intersect,
-        CesiumMath,
-        Matrix4,
-        PixelFormat,
-        Plane,
-        PixelDatatype,
-        TextureMagnificationFilter,
-        TextureMinificationFilter,
-        TextureWrap,
-        ClippingPlane,
-        createScene) {
-    'use strict';
+import { AttributeCompression } from '../../Source/Cesium.js';
+import { BoundingSphere } from '../../Source/Cesium.js';
+import { Cartesian2 } from '../../Source/Cesium.js';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { Cartesian4 } from '../../Source/Cesium.js';
+import { Color } from '../../Source/Cesium.js';
+import { Intersect } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { Matrix4 } from '../../Source/Cesium.js';
+import { PixelFormat } from '../../Source/Cesium.js';
+import { Plane } from '../../Source/Cesium.js';
+import { PixelDatatype } from '../../Source/Cesium.js';
+import { TextureMinificationFilter } from '../../Source/Cesium.js';
+import { TextureWrap } from '../../Source/Cesium.js';
+import { ClippingPlane } from '../../Source/Cesium.js';
+import { ClippingPlaneCollection } from '../../Source/Cesium.js';
+import createScene from '../createScene.js';
+
+describe('Scene/ClippingPlaneCollection', function() {
 
     var clippingPlanes;
     var planes = [
@@ -219,6 +199,23 @@ defineSuite([
             scene.destroyForSpecs();
         });
 
+        it('only creates texture when planes are added', function() {
+            var scene = createScene();
+
+            clippingPlanes = new ClippingPlaneCollection();
+            clippingPlanes.update(scene.frameState);
+            expect(clippingPlanes.texture).toBeUndefined();
+
+            clippingPlanes.add(planes[0]);
+            clippingPlanes.update(scene.frameState);
+
+            expect(clippingPlanes.texture).toBeDefined();
+            expect(isNaN(clippingPlanes.texture.width)).toBe(false);
+            expect(isNaN(clippingPlanes.texture.height)).toBe(false);
+
+            scene.destroyForSpecs();
+        });
+
         it('update fills the clipping plane texture with packed planes', function() {
             var scene = createScene();
 
@@ -394,6 +391,30 @@ defineSuite([
             expect(sampler.wrapT).toEqual(TextureWrap.CLAMP_TO_EDGE);
             expect(sampler.minificationFilter).toEqual(TextureMinificationFilter.NEAREST);
             expect(sampler.magnificationFilter).toEqual(TextureMinificationFilter.NEAREST);
+
+            clippingPlanes.destroy();
+            scene.destroyForSpecs();
+        });
+
+        it('only creates texture when planes are added', function() {
+            var scene = createScene();
+
+            if (!ClippingPlaneCollection.useFloatTexture(scene.context)) {
+                // Don't fail just because float textures aren't supported
+                scene.destroyForSpecs();
+                return;
+            }
+
+            clippingPlanes = new ClippingPlaneCollection();
+            clippingPlanes.update(scene.frameState);
+            expect(clippingPlanes.texture).toBeUndefined();
+
+            clippingPlanes.add(planes[0]);
+            clippingPlanes.update(scene.frameState);
+
+            expect(clippingPlanes.texture).toBeDefined();
+            expect(isNaN(clippingPlanes.texture.width)).toBe(false);
+            expect(isNaN(clippingPlanes.texture.height)).toBe(false);
 
             clippingPlanes.destroy();
             scene.destroyForSpecs();

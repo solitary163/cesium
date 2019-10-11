@@ -1,34 +1,19 @@
-define([
-        '../ThirdParty/google-earth-dbroot-parser',
-        '../ThirdParty/when',
-        './Check',
-        './Credit',
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './GoogleEarthEnterpriseTileInformation',
-        './isBitSet',
-        './Math',
-        './Request',
-        './Resource',
-        './RuntimeError',
-        './TaskProcessor'
-    ], function(
-        dbrootParser,
-        when,
-        Check,
-        Credit,
-        defaultValue,
-        defined,
-        defineProperties,
-        GoogleEarthEnterpriseTileInformation,
-        isBitSet,
-        CesiumMath,
-        Request,
-        Resource,
-        RuntimeError,
-        TaskProcessor) {
-    'use strict';
+import protobufMinimal from '../ThirdParty/protobuf-minimal.js';
+import when from '../ThirdParty/when.js';
+import buildModuleUrl from './buildModuleUrl.js';
+import Check from './Check.js';
+import Credit from './Credit.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import GoogleEarthEnterpriseTileInformation from './GoogleEarthEnterpriseTileInformation.js';
+import isBitSet from './isBitSet.js';
+import loadAndExecuteScript from './loadAndExecuteScript.js';
+import CesiumMath from './Math.js';
+import Request from './Request.js';
+import Resource from './Resource.js';
+import RuntimeError from './RuntimeError.js';
+import TaskProcessor from './TaskProcessor.js';
 
     function stringToBuffer(str) {
         var len = str.length;
@@ -488,6 +473,8 @@ define([
         });
     }
 
+    var dbrootParser;
+    var dbrootParserPromise;
     function requestDbRoot(that) {
         var resource = that._resource.getDerivedResource({
             url: 'dbRoot.v5',
@@ -496,8 +483,23 @@ define([
             }
         });
 
-        return resource.fetchArrayBuffer()
-            .then(function(buf) {
+        if (!defined(dbrootParserPromise)) {
+            var url = buildModuleUrl('ThirdParty/google-earth-dbroot-parser.js');
+            var oldValue = window.cesiumGoogleEarthDbRootParser;
+            dbrootParserPromise = loadAndExecuteScript(url)
+                .then(function() {
+                    dbrootParser = window.cesiumGoogleEarthDbRootParser(protobufMinimal);
+                    if (defined(oldValue)) {
+                        window.cesiumGoogleEarthDbRootParser = oldValue;
+                    } else {
+                        delete window.cesiumGoogleEarthDbRootParser;
+                    }
+                });
+        }
+
+        return dbrootParserPromise.then(function() {
+            return resource.fetchArrayBuffer();
+            }).then(function(buf) {
                 var encryptedDbRootProto = dbrootParser.EncryptedDbRootProto.decode(new Uint8Array(buf));
 
                 var byteArray = encryptedDbRootProto.encryptionData;
@@ -545,6 +547,4 @@ define([
                 that.key = defaultKey;
             });
     }
-
-    return GoogleEarthEnterpriseMetadata;
-});
+export default GoogleEarthEnterpriseMetadata;

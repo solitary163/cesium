@@ -1,24 +1,12 @@
-define([
-        './ClockRange',
-        './ClockStep',
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './DeveloperError',
-        './Event',
-        './getTimestamp',
-        './JulianDate'
-    ], function(
-        ClockRange,
-        ClockStep,
-        defaultValue,
-        defined,
-        defineProperties,
-        DeveloperError,
-        Event,
-        getTimestamp,
-        JulianDate) {
-    'use strict';
+import ClockRange from './ClockRange.js';
+import ClockStep from './ClockStep.js';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import DeveloperError from './DeveloperError.js';
+import Event from './Event.js';
+import getTimestamp from './getTimestamp.js';
+import JulianDate from './JulianDate.js';
 
     /**
      * A simple clock for keeping track of simulated time.
@@ -132,6 +120,11 @@ define([
          * @type {Event}
          */
         this.onTick = new Event();
+        /**
+         * An {@link Event} that is fired whenever {@link Clock#stopTime} is reached.
+         * @type {Event}
+         */
+        this.onStop = new Event();
 
         this._currentTime = undefined;
         this._multiplier = undefined;
@@ -290,6 +283,7 @@ define([
                         currentTime = JulianDate.clone(startTime, currentTime);
                     } else if (JulianDate.greaterThan(currentTime, stopTime)) {
                         currentTime = JulianDate.clone(stopTime, currentTime);
+                        this.onStop.raiseEvent(this);
                     }
                 } else if (clockRange === ClockRange.LOOP_STOP) {
                     if (JulianDate.lessThan(currentTime, startTime)) {
@@ -297,6 +291,7 @@ define([
                     }
                     while (JulianDate.greaterThan(currentTime, stopTime)) {
                         currentTime = JulianDate.addSeconds(startTime, JulianDate.secondsDifference(currentTime, stopTime), currentTime);
+                        this.onStop.raiseEvent(this);
                     }
                 }
             }
@@ -307,6 +302,4 @@ define([
         this.onTick.raiseEvent(this);
         return currentTime;
     };
-
-    return Clock;
-});
+export default Clock;

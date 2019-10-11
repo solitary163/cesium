@@ -1,20 +1,12 @@
-defineSuite([
-        'Scene/Globe',
-        'Core/CesiumTerrainProvider',
-        'Core/Rectangle',
-        'Core/Resource',
-        'Scene/SingleTileImageryProvider',
-        'Specs/createScene',
-        'Specs/pollToPromise'
-    ], function(
-        Globe,
-        CesiumTerrainProvider,
-        Rectangle,
-        Resource,
-        SingleTileImageryProvider,
-        createScene,
-        pollToPromise) {
-    'use strict';
+import { CesiumTerrainProvider } from '../../Source/Cesium.js';
+import { Rectangle } from '../../Source/Cesium.js';
+import { Resource } from '../../Source/Cesium.js';
+import { Globe } from '../../Source/Cesium.js';
+import { SingleTileImageryProvider } from '../../Source/Cesium.js';
+import createScene from '../createScene.js';
+import pollToPromise from '../pollToPromise.js';
+
+describe('Scene/Globe', function() {
 
     var scene;
     var globe;
@@ -205,6 +197,66 @@ defineSuite([
 
             scene.globe.show = false;
             expect(scene).toRender([0, 0, 0, 255]);
+        });
+    });
+
+    it('renders with hue shift', function() {
+        var layerCollection = globe.imageryLayers;
+        layerCollection.removeAll();
+        layerCollection.addImageryProvider(new SingleTileImageryProvider({url : 'Data/Images/Blue.png'}));
+
+        scene.camera.flyHome(0.0);
+
+        return updateUntilDone(globe).then(function() {
+            scene.globe.show = false;
+            expect(scene).toRender([0, 0, 0, 255]);
+            scene.globe.show = true;
+            expect(scene).notToRender([0, 0, 0, 255]);
+            expect(scene).toRenderAndCall(function(rgba) {
+                scene.globe.atmosphereHueShift = 0.1;
+                expect(scene).notToRender([0, 0, 0, 255]);
+                expect(scene).notToRender(rgba);
+            });
+        });
+    });
+
+    it('renders with saturation shift', function() {
+        var layerCollection = globe.imageryLayers;
+        layerCollection.removeAll();
+        layerCollection.addImageryProvider(new SingleTileImageryProvider({url : 'Data/Images/Blue.png'}));
+
+        scene.camera.flyHome(0.0);
+
+        return updateUntilDone(globe).then(function() {
+            scene.globe.show = false;
+            expect(scene).toRender([0, 0, 0, 255]);
+            scene.globe.show = true;
+            expect(scene).notToRender([0, 0, 0, 255]);
+            expect(scene).toRenderAndCall(function(rgba) {
+                scene.globe.atmosphereSaturationShift = 0.1;
+                expect(scene).notToRender([0, 0, 0, 255]);
+                expect(scene).notToRender(rgba);
+            });
+        });
+    });
+
+    it('renders with brightness shift', function() {
+        var layerCollection = globe.imageryLayers;
+        layerCollection.removeAll();
+        layerCollection.addImageryProvider(new SingleTileImageryProvider({url : 'Data/Images/Blue.png'}));
+
+        scene.camera.flyHome(0.0);
+
+        return updateUntilDone(globe).then(function() {
+            scene.globe.show = false;
+            expect(scene).toRender([0, 0, 0, 255]);
+            scene.globe.show = true;
+            expect(scene).notToRender([0, 0, 0, 255]);
+            expect(scene).toRenderAndCall(function(rgba) {
+                scene.globe.atmosphereBrightnessShift = 0.1;
+                expect(scene).notToRender([0, 0, 0, 255]);
+                expect(scene).notToRender(rgba);
+            });
         });
     });
 }, 'WebGL');
