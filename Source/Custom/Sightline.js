@@ -2,19 +2,19 @@
  * @author ljh
  */
 
-import Cartesian2 from '../Core/Cartesian2';
-import Cartesian3 from '../Core/Cartesian3';
-import Ray from '../Core/Ray';
-import Color from '../Core/Color';
-import ScreenSpaceEventHandler from '../Core/ScreenSpaceEventHandler';
-import ScreenSpaceEventType from '../Core/ScreenSpaceEventType';
+import Cartesian2 from '../Core/Cartesian2.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import Ray from '../Core/Ray.js';
+import Color from '../Core/Color.js';
+import ScreenSpaceEventHandler from '../Core/ScreenSpaceEventHandler.js';
+import ScreenSpaceEventType from '../Core/ScreenSpaceEventType.js';
 
 var _viewer,
     _scene,
     _screenSpaceEvnentHandler;
 
 function addPoint(position, text, color) {
-    let entity = _viewer.entities.add({
+    var entity = _viewer.entities.add({
         show: true,
         position: position,
         point: {
