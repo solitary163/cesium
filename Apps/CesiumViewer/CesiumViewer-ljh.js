@@ -10,6 +10,7 @@ import {
     GeoJsonDataSource,
     KmlDataSource,
     TileMapServiceImageryProvider,
+    UrlTemplateImageryProvider,
     Viewer,
     viewerCesiumInspectorMixin,
     viewerDragDropMixin,
@@ -50,10 +51,13 @@ function main() {
     try {
         var hasBaseLayerPicker = !defined(imageryProvider);
         viewer = new Viewer('cesiumContainer', {
-            imageryProvider: imageryProvider,
+            imageryProvider: new UrlTemplateImageryProvider({
+                url: "http://mt1.google.cn/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}&s=Gali"
+            }),
             baseLayerPicker: hasBaseLayerPicker,
             scene3DOnly: endUserOptions.scene3DOnly,
-            requestRenderMode: true
+            requestRenderMode: true,
+            shouldAnimate: true
         });
         window.viewer = viewer;
         //viewer.scene.rethrowRenderErrors = true;
@@ -207,11 +211,24 @@ function main() {
 
     loadingIndicator.style.display = 'none';
 
+
+    // 添加模型
+    var modelPosition = Cartesian3.fromDegrees(86.875135, 28.061393, 5800);
+    var modelEntity = viewer.entities.add({
+        name: 'cartoon_plane',
+        position: modelPosition,
+        model: {
+            uri: '../SampleData/models/cartoon_plane/scene.gltf',
+            minimumPixelSize: 128,
+            maximumScale: 20000
+        }
+    });
+    viewer.trackedEntity = modelEntity;
     setTimeout(function() {
         var viewShed3D = new ViewShed3D(viewer, {
             //cameraPosition: Cartesian3.fromDegrees(0, 0, 10000),
             //viewPosition: Cartesian3.fromDegrees(0.1, 0, -100),
-            cameraPosition: Cartesian3.fromDegrees(86.393,28.209, 10000),
+            cameraPosition: Cartesian3.fromDegrees(86.393, 28.209, 10000),
             viewPosition: Cartesian3.fromDegrees(87.268, 27.897, 0),
             horizontalAngle: 60,
             verticalAngle: 60
