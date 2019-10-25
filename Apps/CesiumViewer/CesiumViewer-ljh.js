@@ -1,6 +1,7 @@
 import {
     Cartesian3,
     createWorldTerrain,
+    CesiumTerrainProvider,
     defined,
     formatError,
     Math as CesiumMath,
@@ -14,7 +15,8 @@ import {
     Viewer,
     viewerCesiumInspectorMixin,
     viewerDragDropMixin,
-    ViewShed3D
+    ViewShed3D,
+    Color
 } from '../../Source/Cesium.js';
 
 function main() {
@@ -62,15 +64,9 @@ function main() {
         window.viewer = viewer;
         //viewer.scene.rethrowRenderErrors = true;
 
-        if (hasBaseLayerPicker) {
-            var viewModel = viewer.baseLayerPicker.viewModel;
-            viewModel.selectedTerrain = viewModel.terrainProviderViewModels[1];
-        } else {
-            viewer.terrainProvider = createWorldTerrain({
-                requestWaterMask: true,
-                requestVertexNormals: true
-            });
-        }
+        viewer.terrainProvider = new CesiumTerrainProvider({
+            url : 'http://localhost/data/Dem/tiles/zmlm'
+        });
     } catch (exception) {
         loadingIndicator.style.display = 'none';
         var message = formatError(exception);
@@ -211,6 +207,8 @@ function main() {
 
     loadingIndicator.style.display = 'none';
 
+    // 开启地形深度检测
+    viewer.scene.globe.depthTestAgainstTerrain = true;
 
     // 添加模型
     var modelPosition = Cartesian3.fromDegrees(86.875135, 28.061393, 5800);
@@ -218,12 +216,17 @@ function main() {
         name: 'cartoon_plane',
         position: modelPosition,
         model: {
-            uri: '../SampleData/models/cartoon_plane/scene.gltf',
-            minimumPixelSize: 128,
-            maximumScale: 20000
+            //uri: '../SampleData/models/cartoon_plane/scene.gltf',
+            uri: '../SampleData/models/helicopter/scene.gltf',
+            //minimumPixelSize: 0,
+            maximumScale: 20000,
+            scale: 0.15,
+            silhouetteSize: 1,
+            silhouetteColor: Color.YELLOW
         }
     });
-    viewer.trackedEntity = modelEntity;
+    //viewer.trackedEntity = modelEntity;
+    return;
     setTimeout(function() {
         var viewShed3D = new ViewShed3D(viewer, {
             //cameraPosition: Cartesian3.fromDegrees(0, 0, 10000),
