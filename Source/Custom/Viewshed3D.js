@@ -1,4 +1,3 @@
-
 import defaultValue from '../core/defaultValue.js';
 import defined from '../Core/defined.js';
 import defineProperties from '../Core/defineProperties.js';
