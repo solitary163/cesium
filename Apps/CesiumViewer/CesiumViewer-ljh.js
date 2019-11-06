@@ -1,3 +1,5 @@
+window.CESIUM_BASE_URL = '../../Source/';
+
 import {
     Cartesian3,
     Cartographic,
@@ -221,12 +223,13 @@ function main() {
         position: modelPosition,
         model: {
             //uri: '../SampleData/models/cartoon_plane/scene.gltf',
-            uri: '../SampleData/models/helicopter/scene.gltf',
+            //uri: '../SampleData/models/helicopter/scene.gltf',
+            uri: '../SampleData/models/J20/J20.gltf',
             //minimumPixelSize: 0,
             maximumScale: 20000,
-            scale: 0.15,
-            //silhouetteSize: 1,
-            //silhouetteColor: Color.YELLOW
+            scale: 15,
+            silhouetteSize: 1,
+            silhouetteColor: Color.YELLOW
         }
     });
     //viewer.trackedEntity = modelEntity;
@@ -258,7 +261,7 @@ function main() {
     });
     //*/
 
-    //return;
+    return;
     var viewShed3D = new ViewShed3D(viewer, {
         //cameraPosition: Cartesian3.fromDegrees(0, 0, 10000),
         //viewPosition: Cartesian3.fromDegrees(0.1, 0, -100),
@@ -267,8 +270,6 @@ function main() {
         horizontalAngle: 60,
         verticalAngle: 60
     });
-    setTimeout(function() {
-    }, 5000);
 }
 
 main();
