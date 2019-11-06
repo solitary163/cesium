@@ -38,7 +38,7 @@ import Texture from '../Renderer/Texture.js';
 import ViewshedLineVS from './ViewshedLineVS.js';
 import ViewshedLineFS from './ViewshedLineFS.js';
 
-import DebugCameraPrimitive from '../Scene/DebugCameraPrimitive.js';
+//import DebugCameraPrimitive from '../Scene/DebugCameraPrimitive.js';
 
 Camera.DEFAULT_VIEW_RECTANGLE = Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2);
 
