@@ -1,19 +1,28 @@
+window.CESIUM_BASE_URL = '../../Source/';
+
 import {
     Cartesian3,
+    Cartographic,
+    Matrix4,
     createWorldTerrain,
+    CesiumTerrainProvider,
     defined,
     formatError,
     Math as CesiumMath,
+    HeadingPitchRange,
     objectToQuery,
     queryToObject,
     CzmlDataSource,
     GeoJsonDataSource,
+    Cesium3DTileset,
     KmlDataSource,
     TileMapServiceImageryProvider,
+    UrlTemplateImageryProvider,
     Viewer,
     viewerCesiumInspectorMixin,
     viewerDragDropMixin,
-    ViewShed3D
+    ViewShed3D,
+    Color
 } from '../../Source/Cesium.js';
 
 function main() {
@@ -50,23 +59,20 @@ function main() {
     try {
         var hasBaseLayerPicker = !defined(imageryProvider);
         viewer = new Viewer('cesiumContainer', {
-            imageryProvider: imageryProvider,
+            imageryProvider: new UrlTemplateImageryProvider({
+                url: "http://mt1.google.cn/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}&s=Gali"
+            }),
             baseLayerPicker: hasBaseLayerPicker,
             scene3DOnly: endUserOptions.scene3DOnly,
-            requestRenderMode: true
+            requestRenderMode: true,
+            shouldAnimate: true
         });
         window.viewer = viewer;
-        //viewer.scene.rethrowRenderErrors = true;
+        viewer.scene.rethrowRenderErrors = true;
 
-        if (hasBaseLayerPicker) {
-            var viewModel = viewer.baseLayerPicker.viewModel;
-            viewModel.selectedTerrain = viewModel.terrainProviderViewModels[1];
-        } else {
-            viewer.terrainProvider = createWorldTerrain({
-                requestWaterMask: true,
-                requestVertexNormals: true
-            });
-        }
+        viewer.terrainProvider = new CesiumTerrainProvider({
+            url: 'http://localhost/data/Dem/tiles/zmlm'
+        });
     } catch (exception) {
         loadingIndicator.style.display = 'none';
         var message = formatError(exception);
@@ -207,16 +213,63 @@ function main() {
 
     loadingIndicator.style.display = 'none';
 
-    setTimeout(function() {
-        var viewShed3D = new ViewShed3D(viewer, {
-            //cameraPosition: Cartesian3.fromDegrees(0, 0, 10000),
-            //viewPosition: Cartesian3.fromDegrees(0.1, 0, -100),
-            cameraPosition: Cartesian3.fromDegrees(86.393,28.209, 10000),
-            viewPosition: Cartesian3.fromDegrees(87.268, 27.897, 0),
-            horizontalAngle: 60,
-            verticalAngle: 60
-        });
-    }, 5000);
+    // 开启地形深度检测
+    viewer.scene.globe.depthTestAgainstTerrain = true;
+
+    // 添加模型
+    var modelPosition = Cartesian3.fromDegrees(86.875135, 28.061393, 5800);
+    var modelEntity = viewer.entities.add({
+        name: 'cartoon_plane',
+        position: modelPosition,
+        model: {
+            //uri: '../SampleData/models/cartoon_plane/scene.gltf',
+            //uri: '../SampleData/models/helicopter/scene.gltf',
+            uri: '../SampleData/models/J20/J20.gltf',
+            //minimumPixelSize: 0,
+            maximumScale: 20000,
+            scale: 15,
+            silhouetteSize: 1,
+            silhouetteColor: Color.YELLOW
+        }
+    });
+    //viewer.trackedEntity = modelEntity;
+
+    /*/ 添加3dtiles
+    function adjust(height) {
+        var cartographic = Cartographic.fromCartesian(tileset.boundingSphere.center);
+        //var cartographic = new Cartographic(111.666622034439, 40.7536481117267, 0);
+        var surface = Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0.0);
+        var offset = Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, height);
+        var translation = Cartesian3.subtract(offset, surface, new Cartesian3());
+        tileset.modelMatrix = Matrix4.fromTranslation(translation);
+
+        console.log('center', CesiumMath.toDegrees(cartographic.longitude), CesiumMath.toDegrees(cartographic.latitude));
+    }
+    window.adjust = adjust;
+    var tileset = window.tileset = new Cesium3DTileset({
+        url: 'http://localhost/data/Model/zjbwy/tiles/tileset.json',
+        debugShowBoundingVolume: false
+    });
+    // 111.67986095, 40.70671168
+    tileset.readyPromise.then(function(tileset) {
+        //adjust(-1060);
+        adjust(-1040);
+        viewer.scene.primitives.add(tileset);
+        viewer.zoomTo(tileset, new HeadingPitchRange(0.0, -0.5, tileset.boundingSphere.radius * 2.0));
+    }).otherwise(function(error) {
+        console.log(error);
+    });
+    //*/
+
+    return;
+    var viewShed3D = new ViewShed3D(viewer, {
+        //cameraPosition: Cartesian3.fromDegrees(0, 0, 10000),
+        //viewPosition: Cartesian3.fromDegrees(0.1, 0, -100),
+        // cameraPosition: Cartesian3.fromDegrees(86.393, 28.209, 10000),
+        // viewPosition: Cartesian3.fromDegrees(87.268, 27.897, 0),
+        horizontalAngle: 60,
+        verticalAngle: 60
+    });
 }
 
 main();

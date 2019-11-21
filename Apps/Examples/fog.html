@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="common.css" media="screen">
+    <script type="module">
+        window.CESIUM_BASE_URL = '../../Source/';
+
+        import {
+            defined,
+            Viewer,
+            UrlTemplateImageryProvider,
+            CesiumTerrainProvider,
+            PostProcessStage
+        } from '../../Source/Cesium.js';
+
+        window.onload = function() {
+            var loadingIndicator = document.getElementById('loadingIndicator');
+
+            var viewer = new Viewer('cesiumContainer', {
+                imageryProvider: new UrlTemplateImageryProvider({
+                    url: "http://mt1.google.cn/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}&s=Gali"
+                }),
+                requestRenderMode: true,
+                shouldAnimate: true
+            });
+            window.viewer = viewer;
+            viewer.scene.rethrowRenderErrors = true;
+
+            viewer.terrainProvider = new CesiumTerrainProvider({
+                url: 'http://localhost/data/Dem/tiles/zmlm'
+            });
+            loadingIndicator.style.display = 'none';
+
+            var fogStage = new PostProcessStage({
+                name: 'fog',
+                fragmentShader: `
+                    uniform sampler2D colorTexture;
+                    uniform sampler2D depthTexture;
+                    varying vec2 v_textureCoordinates;
+                    void main(void)
+                    {
+                        vec4 origcolor = texture2D(colorTexture, v_textureCoordinates);
+                        vec4 fogcolor = vec4(0.8, 0.8, 0.8, 0.5);
+
+                        float depth = czm_readDepth(depthTexture, v_textureCoordinates);
+                        vec4 depthcolor = texture2D(depthTexture, v_textureCoordinates);
+
+                        float f = clamp((depth - 0.42) / 0.2, 0.0, 1.0);
+                        gl_FragColor = mix(origcolor, fogcolor, f);
+                    }`
+            });
+
+            viewer.scene.postProcessStages.add(fogStage);
+            fogStage.enabled = true;
+        }
+    </script>
+</head>
+
+<body>
+    <div id="cesiumContainer" class="fullWindow"></div>
+    <div id="loadingIndicator" class="loadingIndicator"></div>
+</body>
+
+</html>
