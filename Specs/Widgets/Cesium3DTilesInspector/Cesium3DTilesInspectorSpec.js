@@ -1,16 +1,10 @@
-defineSuite([
-        'Widgets/Cesium3DTilesInspector/Cesium3DTilesInspector',
-        'Core/Ellipsoid',
-        'Scene/Cesium3DTileset',
-        'Scene/Globe',
-        'Specs/createScene'
-    ], function(
-        Cesium3DTilesInspector,
-        Ellipsoid,
-        Cesium3DTileset,
-        Globe,
-        createScene) {
-    'use strict';
+import { Ellipsoid } from '../../../Source/Cesium.js';
+import { Cesium3DTileset } from '../../../Source/Cesium.js';
+import { Globe } from '../../../Source/Cesium.js';
+import createScene from '../../createScene.js';
+import { Cesium3DTilesInspector } from '../../../Source/Cesium.js';
+
+describe('Widgets/Cesium3DTilesInspector/Cesium3DTilesInspector', function() {
 
     // Parent tile with content and four child tiles with content
     var tilesetUrl = './Data/Cesium3DTiles/Tilesets/Tileset/tileset.json';
@@ -79,16 +73,6 @@ defineSuite([
         afterAll(function() {
             widget.destroy();
             document.body.removeChild(container);
-        });
-
-        it('shows performance', function() {
-            var viewModel = widget.viewModel;
-            viewModel.performance = true;
-            expect(viewModel._performanceDisplay._container.className.indexOf('cesium-cesiumInspector-show') !== -1).toBe(true);
-            expect(viewModel._performanceDisplay._container.className.indexOf('cesium-cesiumInspector-hide') === -1).toBe(true);
-            viewModel.performance = false;
-            expect(viewModel._performanceDisplay._container.className.indexOf('cesium-cesiumInspector-show') === -1).toBe(true);
-            expect(viewModel._performanceDisplay._container.className.indexOf('cesium-cesiumInspector-hide') !== -1).toBe(true);
         });
     });
 }, 'WebGL');

@@ -1,8 +1,4 @@
-define([
-        './SceneMode'
-    ], function(
-        SceneMode) {
-    'use strict';
+import SceneMode from './SceneMode.js';
 
     /**
      * State information about the current frame.  An instance of this class
@@ -51,6 +47,24 @@ define([
         this.environmentMap = undefined;
 
         /**
+         * The spherical harmonic coefficients used for image-based lighting for PBR models.
+         * @type {Cartesian3[]}
+         */
+        this.sphericalHarmonicCoefficients = undefined;
+
+        /**
+         * The specular environment atlas used for image-based lighting for PBR models.
+         * @type {Texture}
+         */
+        this.specularEnvironmentMaps = undefined;
+
+        /**
+         * The maximum level-of-detail of the specular environment atlas used for image-based lighting for PBR models.
+         * @type {Number}
+         */
+        this.specularEnvironmentMapsMaximumLOD = undefined;
+
+        /**
          * The current mode of the scene.
          *
          * @type {SceneMode}
@@ -73,6 +87,14 @@ define([
          * @default 0
          */
         this.frameNumber = 0;
+
+        /**
+         * <code>true</code> if a new frame has been issued and the frame number has been updated.
+         *
+         * @type {Boolean}
+         * @default false
+         */
+        this.newFrame = false;
 
         /**
          * The scene's current time.
@@ -130,6 +152,15 @@ define([
          */
         this.maximumScreenSpaceError = undefined;
 
+        /**
+         * Ratio between a pixel and a density-independent pixel. Provides a standard unit of
+         * measure for real pixel measurements appropriate to a particular device.
+         *
+         * @type {Number}
+         * @default 1.0
+         */
+        this.pixelRatio = 1.0;
+
         this.passes = {
             /**
              * <code>true</code> if the primitive should update for a render pass, <code>false</code> otherwise.
@@ -159,7 +190,14 @@ define([
              * @type {Boolean}
              * @default false
              */
-            postProcess : false
+            postProcess : false,
+
+            /**
+             * <code>true</code> if the primitive should update for an offscreen pass, <code>false</code> otherwise.
+             * @type {Boolean}
+             * @default false
+             */
+            offscreen : false
         };
 
         /**
@@ -311,6 +349,13 @@ define([
         this.backgroundColor = undefined;
 
         /**
+         * The light used to shade the scene.
+         *
+         * @type {Light}
+         */
+        this.light = undefined;
+
+        /**
          * The distance from the camera at which to disable the depth test of billboards, labels and points
          * to, for example, prevent clipping against terrain. When set to zero, the depth test should always
          * be applied. When less than zero, the depth test should never be applied.
@@ -341,12 +386,19 @@ define([
         this.useLogDepth = false;
 
         /**
-         * Whether or not the scene's logarithmic depth buffer usage changed since last frame.
+         * Additional state used to update 3D Tilesets.
          *
-         * @type {Boolean}
-         * @default false
+         * @type {Cesium3DTilePassState}
          */
-        this.useLogDepthDirty = false;
+        this.tilesetPassState = undefined;
+
+        /**
+         * The minimum terrain height out of all rendered terrain tiles. Used to improve culling for objects underneath the ellipsoid but above terrain.
+         *
+         * @type {Number}
+         * @default 0.0
+         */
+        this.minimumTerrainHeight = 0.0;
     }
 
     /**
@@ -354,6 +406,4 @@ define([
      *
      * @callback FrameState~AfterRenderCallback
      */
-
-    return FrameState;
-});
+export default FrameState;

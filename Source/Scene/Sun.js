@@ -1,60 +1,31 @@
-define([
-        '../Core/BoundingSphere',
-        '../Core/Cartesian2',
-        '../Core/Cartesian3',
-        '../Core/Cartesian4',
-        '../Core/ComponentDatatype',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/destroyObject',
-        '../Core/IndexDatatype',
-        '../Core/Math',
-        '../Core/Matrix4',
-        '../Core/PixelFormat',
-        '../Core/PrimitiveType',
-        '../Renderer/Buffer',
-        '../Renderer/BufferUsage',
-        '../Renderer/ComputeCommand',
-        '../Renderer/DrawCommand',
-        '../Renderer/RenderState',
-        '../Renderer/ShaderProgram',
-        '../Renderer/Texture',
-        '../Renderer/VertexArray',
-        '../Shaders/SunFS',
-        '../Shaders/SunTextureFS',
-        '../Shaders/SunVS',
-        './BlendingState',
-        './SceneMode',
-        './SceneTransforms'
-    ], function(
-        BoundingSphere,
-        Cartesian2,
-        Cartesian3,
-        Cartesian4,
-        ComponentDatatype,
-        defined,
-        defineProperties,
-        destroyObject,
-        IndexDatatype,
-        CesiumMath,
-        Matrix4,
-        PixelFormat,
-        PrimitiveType,
-        Buffer,
-        BufferUsage,
-        ComputeCommand,
-        DrawCommand,
-        RenderState,
-        ShaderProgram,
-        Texture,
-        VertexArray,
-        SunFS,
-        SunTextureFS,
-        SunVS,
-        BlendingState,
-        SceneMode,
-        SceneTransforms) {
-    'use strict';
+import BoundingSphere from '../Core/BoundingSphere.js';
+import Cartesian2 from '../Core/Cartesian2.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import Cartesian4 from '../Core/Cartesian4.js';
+import ComponentDatatype from '../Core/ComponentDatatype.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import destroyObject from '../Core/destroyObject.js';
+import IndexDatatype from '../Core/IndexDatatype.js';
+import CesiumMath from '../Core/Math.js';
+import Matrix4 from '../Core/Matrix4.js';
+import PixelFormat from '../Core/PixelFormat.js';
+import PrimitiveType from '../Core/PrimitiveType.js';
+import Buffer from '../Renderer/Buffer.js';
+import BufferUsage from '../Renderer/BufferUsage.js';
+import ComputeCommand from '../Renderer/ComputeCommand.js';
+import DrawCommand from '../Renderer/DrawCommand.js';
+import PixelDatatype from '../Renderer/PixelDatatype.js';
+import RenderState from '../Renderer/RenderState.js';
+import ShaderProgram from '../Renderer/ShaderProgram.js';
+import Texture from '../Renderer/Texture.js';
+import VertexArray from '../Renderer/VertexArray.js';
+import SunFS from '../Shaders/SunFS.js';
+import SunTextureFS from '../Shaders/SunTextureFS.js';
+import SunVS from '../Shaders/SunVS.js';
+import BlendingState from './BlendingState.js';
+import SceneMode from './SceneMode.js';
+import SceneTransforms from './SceneTransforms.js';
 
     /**
      * Draws a sun billboard.
@@ -99,6 +70,8 @@ define([
         this.glowFactor = 1.0;
         this._glowFactorDirty = false;
 
+        this._useHdr = undefined;
+
         var that = this;
         this._uniformMap = {
             u_texture : function() {
@@ -138,7 +111,7 @@ define([
     /**
      * @private
      */
-    Sun.prototype.update = function(frameState, passState) {
+    Sun.prototype.update = function(frameState, passState, useHdr) {
         if (!this.show) {
             return undefined;
         }
@@ -159,11 +132,13 @@ define([
         if (!defined(this._texture) ||
                 drawingBufferWidth !== this._drawingBufferWidth ||
                 drawingBufferHeight !== this._drawingBufferHeight ||
-                this._glowFactorDirty) {
+                this._glowFactorDirty ||
+                useHdr !== this._useHdr) {
             this._texture = this._texture && this._texture.destroy();
             this._drawingBufferWidth = drawingBufferWidth;
             this._drawingBufferHeight = drawingBufferHeight;
             this._glowFactorDirty = false;
+            this._useHdr = useHdr;
 
             var size = Math.max(drawingBufferWidth, drawingBufferHeight);
             size = Math.pow(2.0, Math.ceil(Math.log(size) / Math.log(2.0)) - 2.0);
@@ -173,11 +148,13 @@ define([
             // errors in the tests.
             size = Math.max(1.0, size);
 
+            var pixelDatatype = useHdr ? (context.halfFloatingPointTexture ? PixelDatatype.HALF_FLOAT : PixelDatatype.FLOAT) : PixelDatatype.UNSIGNED_BYTE;
             this._texture = new Texture({
                 context : context,
                 width : size,
                 height : size,
-                pixelFormat : PixelFormat.RGBA
+                pixelFormat : PixelFormat.RGBA,
+                pixelDatatype : pixelDatatype
             });
 
             this._glowLengthTS = this._glowFactor * 5.0;
@@ -185,9 +162,6 @@ define([
 
             var that = this;
             var uniformMap = {
-                u_glowLengthTS : function() {
-                    return that._glowLengthTS;
-                },
                 u_radiusTS : function() {
                     return that._radiusTS;
                 }
@@ -301,8 +275,9 @@ define([
         var limbCC = Matrix4.multiplyByVector(projMatrix, positionEC, scratchCartesian4);
         var limbWC = SceneTransforms.clipToGLWindowCoordinates(passState.viewport, limbCC, scratchLimbWC);
 
-        this._size = Math.ceil(Cartesian2.magnitude(Cartesian2.subtract(limbWC, positionWC, scratchCartesian4)));
+        this._size = Cartesian2.magnitude(Cartesian2.subtract(limbWC, positionWC, scratchCartesian4));
         this._size = 2.0 * this._size * (1.0 + 2.0 * this._glowLengthTS);
+        this._size = Math.ceil(this._size);
 
         return this._commands;
     };
@@ -346,6 +321,4 @@ define([
 
         return destroyObject(this);
     };
-
-    return Sun;
-});
+export default Sun;

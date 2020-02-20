@@ -1,16 +1,10 @@
-defineSuite([
-        'Core/Clock',
-        'Core/ClockRange',
-        'Core/ClockStep',
-        'Core/defined',
-        'Core/JulianDate'
-    ], function(
-        Clock,
-        ClockRange,
-        ClockStep,
-        defined,
-        JulianDate) {
-    'use strict';
+import { Clock } from '../../Source/Cesium.js';
+import { ClockRange } from '../../Source/Cesium.js';
+import { ClockStep } from '../../Source/Cesium.js';
+import { defined } from '../../Source/Cesium.js';
+import { JulianDate } from '../../Source/Cesium.js';
+
+describe('Core/Clock', function() {
 
     it('sets default parameters when constructed', function() {
         var clock = new Clock();
@@ -392,6 +386,46 @@ defineSuite([
         expect(clock.currentTime).toEqual(currentTime);
         expect(start).toEqual(clock.tick());
         expect(start).toEqual(clock.currentTime);
+    });
+
+    it('fires onEnd event when endTime is reached and clock range is CLAMPED', function() {
+        var start = new JulianDate(0);
+        var stop = new JulianDate(1);
+        var currentTime = stop;
+        var multiplier = 100.0;
+        var clock = new Clock({
+            startTime : start,
+            stopTime : stop,
+            currentTime : currentTime,
+            clockStep : ClockStep.TICK_DEPENDENT,
+            multiplier : multiplier,
+            clockRange : ClockRange.CLAMPED,
+            shouldAnimate : true
+        });
+        var onStopSpy = jasmine.createSpy('event');
+        clock.onStop.addEventListener(onStopSpy);
+        clock.tick();
+        expect(onStopSpy).toHaveBeenCalled();
+    });
+
+    it('fires onEnd event when endTime is reached and clock range is LOOP_STOP', function() {
+        var start = new JulianDate(0);
+        var stop = new JulianDate(1);
+        var currentTime = stop;
+        var multiplier = 100.0;
+        var clock = new Clock({
+            startTime : start,
+            stopTime : stop,
+            currentTime : currentTime,
+            clockStep : ClockStep.TICK_DEPENDENT,
+            multiplier : multiplier,
+            clockRange : ClockRange.LOOP_STOP,
+            shouldAnimate : true
+        });
+        var onStopSpy = jasmine.createSpy('event');
+        clock.onStop.addEventListener(onStopSpy);
+        clock.tick();
+        expect(onStopSpy).toHaveBeenCalled();
     });
 
     describe('SYSTEM_CLOCK modes', function() {

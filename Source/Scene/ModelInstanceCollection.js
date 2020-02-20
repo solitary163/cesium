@@ -1,58 +1,32 @@
-define([
-        '../Core/BoundingSphere',
-        '../Core/Cartesian3',
-        '../Core/clone',
-        '../Core/Color',
-        '../Core/ComponentDatatype',
-        '../Core/defaultValue',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/destroyObject',
-        '../Core/DeveloperError',
-        '../Core/Matrix4',
-        '../Core/PrimitiveType',
-        '../Core/Resource',
-        '../Core/RuntimeError',
-        '../Core/Transforms',
-        '../Renderer/Buffer',
-        '../Renderer/BufferUsage',
-        '../Renderer/DrawCommand',
-        '../Renderer/Pass',
-        '../Renderer/ShaderSource',
-        '../ThirdParty/when',
-        './Model',
-        './ModelInstance',
-        './ModelUtility',
-        './SceneMode',
-        './ShadowMode'
-    ], function(
-        BoundingSphere,
-        Cartesian3,
-        clone,
-        Color,
-        ComponentDatatype,
-        defaultValue,
-        defined,
-        defineProperties,
-        destroyObject,
-        DeveloperError,
-        Matrix4,
-        PrimitiveType,
-        Resource,
-        RuntimeError,
-        Transforms,
-        Buffer,
-        BufferUsage,
-        DrawCommand,
-        Pass,
-        ShaderSource,
-        when,
-        Model,
-        ModelInstance,
-        ModelUtility,
-        SceneMode,
-        ShadowMode) {
-    'use strict';
+import BoundingSphere from '../Core/BoundingSphere.js';
+import Cartesian2 from '../Core/Cartesian2.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import Check from '../Core/Check.js';
+import clone from '../Core/clone.js';
+import Color from '../Core/Color.js';
+import ComponentDatatype from '../Core/ComponentDatatype.js';
+import defaultValue from '../Core/defaultValue.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import destroyObject from '../Core/destroyObject.js';
+import DeveloperError from '../Core/DeveloperError.js';
+import Matrix4 from '../Core/Matrix4.js';
+import PrimitiveType from '../Core/PrimitiveType.js';
+import Resource from '../Core/Resource.js';
+import RuntimeError from '../Core/RuntimeError.js';
+import Transforms from '../Core/Transforms.js';
+import Buffer from '../Renderer/Buffer.js';
+import BufferUsage from '../Renderer/BufferUsage.js';
+import DrawCommand from '../Renderer/DrawCommand.js';
+import Pass from '../Renderer/Pass.js';
+import ShaderSource from '../Renderer/ShaderSource.js';
+import ForEach from '../ThirdParty/GltfPipeline/ForEach.js';
+import when from '../ThirdParty/when.js';
+import Model from './Model.js';
+import ModelInstance from './ModelInstance.js';
+import ModelUtility from './ModelUtility.js';
+import SceneMode from './SceneMode.js';
+import ShadowMode from './ShadowMode.js';
 
     var LoadState = {
         NEEDS_LOAD : 0,
@@ -76,14 +50,19 @@ define([
      * @param {Cesium3DTileBatchTable} [options.batchTable] The batch table of the instanced 3D Tile.
      * @param {Resource|String} [options.url] The url to the .gltf file.
      * @param {Object} [options.requestType] The request type, used for request prioritization
-     * @param {Object|ArrayBuffer|Uint8Array} [options.gltf] The object for the glTF JSON or an arraybuffer of Binary glTF defined by the CESIUM_binary_glTF extension.
+     * @param {Object|ArrayBuffer|Uint8Array} [options.gltf] A glTF JSON object, or a binary glTF buffer.
      * @param {Resource|String} [options.basePath=''] The base path that paths in the glTF JSON are relative to.
      * @param {Boolean} [options.dynamic=false] Hint if instance model matrices will be updated frequently.
      * @param {Boolean} [options.show=true] Determines if the collection will be shown.
      * @param {Boolean} [options.allowPicking=true] When <code>true</code>, each instance is pickable with {@link Scene#pick}.
      * @param {Boolean} [options.asynchronous=true] Determines if model WebGL resource creation will be spread out over several frames or block until completion once all glTF files are loaded.
      * @param {Boolean} [options.incrementallyLoadTextures=true] Determine if textures may continue to stream in after the model is loaded.
-     * @param {ShadowMode} [options.shadows=ShadowMode.ENABLED] Determines whether the collection casts or receives shadows from each light source.
+     * @param {ShadowMode} [options.shadows=ShadowMode.ENABLED] Determines whether the collection casts or receives shadows from light sources.
+     * @param {Cartesian2} [options.imageBasedLightingFactor=new Cartesian2(1.0, 1.0)] Scales the diffuse and specular image-based lighting from the earth, sky, atmosphere and star skybox.
+     * @param {Cartesian3} [options.lightColor] The light color when shading models. When <code>undefined</code> the scene's light color is used instead.
+     * @param {Number} [options.luminanceAtZenith=0.2] The sun's luminance at the zenith in kilo candela per meter squared to use for this model's procedural environment map.
+     * @param {Cartesian3[]} [options.sphericalHarmonicCoefficients] The third order spherical harmonic coefficients used for the diffuse color of image-based lighting.
+     * @param {String} [options.specularEnvironmentMaps] A URL to a KTX file that contains a cube map of the specular lighting and the convoluted specular mipmaps.
      * @param {Boolean} [options.debugShowBoundingVolume=false] For debugging only. Draws the bounding sphere for the collection.
      * @param {Boolean} [options.debugWireframe=false] For debugging only. Draws the instances in wireframe.
      *
@@ -164,6 +143,13 @@ define([
 
         this.debugWireframe = defaultValue(options.debugWireframe, false);
         this._debugWireframe = false;
+
+        this._imageBasedLightingFactor = new Cartesian2(1.0, 1.0);
+        Cartesian2.clone(options.imageBasedLightingFactor, this._imageBasedLightingFactor);
+        this.lightColor = options.lightColor;
+        this.luminanceAtZenith = options.luminanceAtZenith;
+        this.sphericalHarmonicCoefficients = options.sphericalHarmonicCoefficients;
+        this.specularEnvironmentMaps = options.specularEnvironmentMaps;
     }
 
     defineProperties(ModelInstanceCollection.prototype, {
@@ -190,6 +176,21 @@ define([
         readyPromise : {
             get : function() {
                 return this._readyPromise.promise;
+            }
+        },
+        imageBasedLightingFactor : {
+            get : function() {
+                return this._imageBasedLightingFactor;
+            },
+            set : function(value) {
+                //>>includeStart('debug', pragmas.debug);
+                Check.typeOf.object('imageBasedLightingFactor', value);
+                Check.typeOf.number.greaterThanOrEquals('imageBasedLightingFactor.x', value.x, 0.0);
+                Check.typeOf.number.lessThanOrEquals('imageBasedLightingFactor.x', value.x, 1.0);
+                Check.typeOf.number.greaterThanOrEquals('imageBasedLightingFactor.y', value.y, 0.0);
+                Check.typeOf.number.lessThanOrEquals('imageBasedLightingFactor.y', value.y, 1.0);
+                //>>includeEnd('debug');
+                Cartesian2.clone(value, this._imageBasedLightingFactor);
             }
         }
     });
@@ -225,6 +226,22 @@ define([
         BoundingSphere.expand(this._boundingSphere, translation, this._boundingSphere);
     };
 
+    function getCheckUniformSemanticFunction(modelSemantics, supportedSemantics, programId, uniformMap) {
+        return function(uniform, uniformName) {
+            var semantic = uniform.semantic;
+            if (defined(semantic) && (modelSemantics.indexOf(semantic) > -1)) {
+                if (supportedSemantics.indexOf(semantic) > -1) {
+                    uniformMap[uniformName] = semantic;
+                } else {
+                    throw new RuntimeError('Shader program cannot be optimized for instancing. ' +
+                        'Uniform "' + uniformName + '" in program "' + programId +
+                        '" uses unsupported semantic "' + semantic + '"'
+                    );
+                }
+            }
+        };
+    }
+
     function getInstancedUniforms(collection, programId) {
         if (defined(collection._instancedUniformsByProgram)) {
             return collection._instancedUniformsByProgram[programId];
@@ -237,13 +254,10 @@ define([
         var modelSemantics = ['MODEL', 'MODELVIEW', 'CESIUM_RTC_MODELVIEW', 'MODELVIEWPROJECTION', 'MODELINVERSE', 'MODELVIEWINVERSE', 'MODELVIEWPROJECTIONINVERSE', 'MODELINVERSETRANSPOSE', 'MODELVIEWINVERSETRANSPOSE'];
         var supportedSemantics = ['MODELVIEW', 'CESIUM_RTC_MODELVIEW', 'MODELVIEWPROJECTION', 'MODELVIEWINVERSETRANSPOSE'];
 
-        var gltf = collection._model.gltf;
-        var techniques = gltf.techniques;
-        for (var techniqueName in techniques) {
-            if (techniques.hasOwnProperty(techniqueName)) {
-                var technique = techniques[techniqueName];
-                var parameters = technique.parameters;
-                var uniforms = technique.uniforms;
+        var techniques = collection._model._sourceTechniques;
+        for (var techniqueId in techniques) {
+            if (techniques.hasOwnProperty(techniqueId)) {
+                var technique = techniques[techniqueId];
                 var program = technique.program;
 
                 // Different techniques may share the same program, skip if already processed.
@@ -251,23 +265,7 @@ define([
                 if (!defined(instancedUniformsByProgram[program])) {
                     var uniformMap = {};
                     instancedUniformsByProgram[program] = uniformMap;
-                    for (var uniformName in uniforms) {
-                        if (uniforms.hasOwnProperty(uniformName)) {
-                            var parameterName = uniforms[uniformName];
-                            var parameter = parameters[parameterName];
-                            var semantic = parameter.semantic;
-                            if (defined(semantic) && (modelSemantics.indexOf(semantic) > -1)) {
-                                if (supportedSemantics.indexOf(semantic) > -1) {
-                                    uniformMap[uniformName] = semantic;
-                                } else {
-                                    throw new RuntimeError('Shader program cannot be optimized for instancing. ' +
-                                        'Parameter "' + parameter + '" in program "' + programId +
-                                        '" uses unsupported semantic "' + semantic + '"'
-                                    );
-                                }
-                            }
-                        }
-                    }
+                    ForEach.techniqueUniform(technique, getCheckUniformSemanticFunction(modelSemantics, supportedSemantics, programId, uniformMap));
                 }
             }
         }
@@ -577,7 +575,12 @@ define([
             uniformMapLoaded : undefined,
             pickIdLoaded : collection._pickIdLoaded,
             ignoreCommands : true,
-            opaquePass : collection._opaquePass
+            opaquePass : collection._opaquePass,
+            imageBasedLightingFactor : collection.imageBasedLightingFactor,
+            lightColor : collection.lightColor,
+            luminanceAtZenith : collection.luminanceAtZenith,
+            sphericalHarmonicCoefficients : collection.sphericalHarmonicCoefficients,
+            specularEnvironmentMaps : collection.specularEnvironmentMaps
         };
 
         if (!usesBatchTable) {
@@ -871,6 +874,12 @@ define([
         var instancingSupported = this._instancingSupported;
         var model = this._model;
 
+        model.imageBasedLightingFactor = this.imageBasedLightingFactor;
+        model.lightColor = this.lightColor;
+        model.luminanceAtZenith = this.luminanceAtZenith;
+        model.sphericalHarmonicCoefficients = this.sphericalHarmonicCoefficients;
+        model.specularEnvironmentMaps = this.specularEnvironmentMaps;
+
         model.update(frameState);
 
         if (model.ready && (this._state === LoadState.LOADING)) {
@@ -962,6 +971,4 @@ define([
 
         return destroyObject(this);
     };
-
-    return ModelInstanceCollection;
-});
+export default ModelInstanceCollection;

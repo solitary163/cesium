@@ -1,44 +1,29 @@
-defineSuite([
-        'Scene/WebMapServiceImageryProvider',
-        'Core/Cartographic',
-        'Core/DefaultProxy',
-        'Core/Ellipsoid',
-        'Core/GeographicTilingScheme',
-        'Core/Math',
-        'Core/queryToObject',
-        'Core/Rectangle',
-        'Core/RequestScheduler',
-        'Core/Resource',
-        'Core/WebMercatorTilingScheme',
-        'Scene/GetFeatureInfoFormat',
-        'Scene/Imagery',
-        'Scene/ImageryLayer',
-        'Scene/ImageryLayerFeatureInfo',
-        'Scene/ImageryProvider',
-        'Scene/ImageryState',
-        'Specs/pollToPromise',
-        'ThirdParty/Uri'
-    ], function(
-        WebMapServiceImageryProvider,
-        Cartographic,
-        DefaultProxy,
-        Ellipsoid,
-        GeographicTilingScheme,
-        CesiumMath,
-        queryToObject,
-        Rectangle,
-        RequestScheduler,
-        Resource,
-        WebMercatorTilingScheme,
-        GetFeatureInfoFormat,
-        Imagery,
-        ImageryLayer,
-        ImageryLayerFeatureInfo,
-        ImageryProvider,
-        ImageryState,
-        pollToPromise,
-        Uri) {
-    'use strict';
+import { Cartographic } from '../../Source/Cesium.js';
+import { Clock } from '../../Source/Cesium.js';
+import { ClockStep } from '../../Source/Cesium.js';
+import { Ellipsoid } from '../../Source/Cesium.js';
+import { GeographicTilingScheme } from '../../Source/Cesium.js';
+import { JulianDate } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { queryToObject } from '../../Source/Cesium.js';
+import { Rectangle } from '../../Source/Cesium.js';
+import { Request } from '../../Source/Cesium.js';
+import { RequestScheduler } from '../../Source/Cesium.js';
+import { RequestState } from '../../Source/Cesium.js';
+import { Resource } from '../../Source/Cesium.js';
+import { TimeIntervalCollection } from '../../Source/Cesium.js';
+import { WebMercatorTilingScheme } from '../../Source/Cesium.js';
+import { GetFeatureInfoFormat } from '../../Source/Cesium.js';
+import { Imagery } from '../../Source/Cesium.js';
+import { ImageryLayer } from '../../Source/Cesium.js';
+import { ImageryLayerFeatureInfo } from '../../Source/Cesium.js';
+import { ImageryProvider } from '../../Source/Cesium.js';
+import { ImageryState } from '../../Source/Cesium.js';
+import { WebMapServiceImageryProvider } from '../../Source/Cesium.js';
+import pollToPromise from '../pollToPromise.js';
+import { Uri } from '../../Source/Cesium.js';
+
+describe('Scene/WebMapServiceImageryProvider', function() {
 
     beforeEach(function() {
         RequestScheduler.clearForSpecs();
@@ -141,8 +126,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
                 expect(params.something).toEqual('foo');
                 expect(params.another).toEqual('false');
@@ -172,8 +157,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
                 expect(params.crs).toEqual('CRS:27');
                 expect(params.version).toEqual('1.3.0');
@@ -202,8 +187,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
                 expect(params.srs).toEqual('EPSG:4326');
                 expect(params.version).toEqual('1.1.0');
@@ -232,8 +217,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
                 expect(params.srs).toEqual('IAU2000:30118');
                 expect(params.version).toEqual('1.1.0');
@@ -284,8 +269,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var questionMarkCount = url.match(/\?/g).length;
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var questionMarkCount = request.url.match(/\?/g).length;
                 expect(questionMarkCount).toEqual(1);
 
                 // Don't need to actually load image, but satisfy the request.
@@ -307,7 +292,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var url = request.url;
                 var questionMarkCount = url.match(/\?/g).length;
                 expect(questionMarkCount).toEqual(1);
                 expect(url).not.toContain('&&');
@@ -331,7 +317,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var url = request.url;
                 var questionMarkCount = url.match(/\?/g).length;
                 expect(questionMarkCount).toEqual(1);
 
@@ -359,8 +346,8 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var url = request.url;
                 var uri = new Uri(url);
                 var params = queryToObject(uri.query);
                 expect(params.version).toEqual('1.1.1');
@@ -393,14 +380,14 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(GeographicTilingScheme);
             expect(provider.rectangle).toEqual(new GeographicTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
                 // Just return any old image.
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -425,8 +412,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(WebMercatorTilingScheme);
             expect(provider.rectangle).toEqual(new WebMercatorTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.srs).toEqual('EPSG:3857');
@@ -435,12 +422,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -468,8 +455,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(WebMercatorTilingScheme);
             expect(provider.rectangle).toEqual(new WebMercatorTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.crs).toEqual('EPSG:3857');
@@ -478,12 +465,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -508,8 +495,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(GeographicTilingScheme);
             expect(provider.rectangle).toEqual(new GeographicTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.srs).toEqual('EPSG:4326');
@@ -518,12 +505,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -551,8 +538,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(GeographicTilingScheme);
             expect(provider.rectangle).toEqual(new GeographicTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.srs).toEqual('EPSG:4326');
@@ -561,12 +548,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -594,8 +581,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(GeographicTilingScheme);
             expect(provider.rectangle).toEqual(new GeographicTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.crs).toEqual('CRS:84');
@@ -604,12 +591,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -637,8 +624,8 @@ defineSuite([
             expect(provider.tilingScheme).toBeInstanceOf(GeographicTilingScheme);
             expect(provider.rectangle).toEqual(new GeographicTilingScheme().rectangle);
 
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.crs).toEqual('CRS:84');
@@ -647,12 +634,12 @@ defineSuite([
                 var rect = tilingScheme.tileXYToNativeRectangle(0, 0, 0);
                 expect(params.bbox).toEqual(rect.west + ',' + rect.south + ',' + rect.east + ',' + rect.north);
 
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
                 expect(Resource._Implementations.createImage).toHaveBeenCalled();
-                expect(image).toBeInstanceOf(Image);
+                expect(image).toBeImageOrImageBitmap();
             });
         });
     });
@@ -669,15 +656,15 @@ defineSuite([
         return pollToPromise(function() {
             return provider.ready;
         }).then(function() {
-            spyOn(Resource._Implementations, 'createImage').and.callFake(function(url, crossOrigin, deferred) {
-                var uri = new Uri(url);
+            spyOn(Resource._Implementations, 'createImage').and.callFake(function(request, crossOrigin, deferred) {
+                var uri = new Uri(request.url);
                 var params = queryToObject(uri.query);
 
                 expect(params.format).toEqual('foo');
                 expect(params.format).not.toEqual('image/jpeg');
 
                 // Just return any old image.
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
             });
 
             return provider.requestImage(0, 0, 0).then(function(image) {
@@ -790,10 +777,10 @@ defineSuite([
                 }, 1);
             });
 
-            Resource._Implementations.createImage = function(url, crossOrigin, deferred) {
+            Resource._Implementations.createImage = function(request, crossOrigin, deferred) {
                 if (tries === 2) {
                     // Succeed after 2 tries
-                    Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
+                    Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
                 } else {
                     // fail
                     setTimeout(function() {
@@ -810,7 +797,7 @@ defineSuite([
             return pollToPromise(function() {
                 return imagery.state === ImageryState.RECEIVED;
             }).then(function() {
-                expect(imagery.image).toBeInstanceOf(Image);
+                expect(imagery.image).toBeImageOrImageBitmap();
                 expect(tries).toEqual(2);
                 imagery.releaseReference();
             });
@@ -818,21 +805,21 @@ defineSuite([
     });
 
     describe('pickFeatures', function() {
-        it('works with GeoJSON responses', function() {
+        it('works with GeoJSON responses', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-GeoJSON.json', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -844,21 +831,21 @@ defineSuite([
             });
         });
 
-        it('works with MapInfo MXP responses', function() {
+        it('works with MapInfo MXP responses', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-MapInfoMXP.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -869,21 +856,21 @@ defineSuite([
             });
         });
 
-        it('works with Esri WMS responses', function() {
+        it('works with Esri WMS responses', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-Esri.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -894,21 +881,21 @@ defineSuite([
             });
         });
 
-        it('works with THREDDS XML format', function() {
+        it('works with THREDDS XML format', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-THREDDS.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -919,21 +906,21 @@ defineSuite([
             });
         });
 
-        it('works with msGMLOutput format', function() {
+        it('works with msGMLOutput format', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-msGMLOutput.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -944,21 +931,21 @@ defineSuite([
             });
         });
 
-        it('works with unknown XML responses', function() {
+        it('works with unknown XML responses', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-Unknown.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -969,109 +956,109 @@ defineSuite([
             });
         });
 
-        it('resolves to undefined on a ServiceException', function() {
+        it('resolves to undefined on a ServiceException', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-ServiceException.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult).toBeUndefined();
                 });
             });
         });
 
-        it('returns undefined if list of feature info formats is empty', function() {
+        it('returns undefined if list of feature info formats is empty', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                getFeatureInfoFormats : []
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                getFeatureInfoFormats: []
             });
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
+            }).then(function () {
                 expect(provider.pickFeatures(0, 0, 0, 0.5, 0.5)).toBeUndefined();
             });
         });
 
-        it('returns undefined if enablePickFeatures is false', function() {
+        it('returns undefined if enablePickFeatures is false', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                enablePickFeatures : false
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                enablePickFeatures: false
             });
 
             expect(provider.enablePickFeatures).toBe(false);
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
+            }).then(function () {
                 expect(provider.pickFeatures(0, 0, 0, 0.5, 0.5)).toBeUndefined();
             });
         });
 
-        it('returns undefined if enablePickFeatures is set to false after initialization', function() {
+        it('returns undefined if enablePickFeatures is set to false after initialization', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                enablePickFeatures : true
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                enablePickFeatures: true
             });
 
             provider.enablePickFeatures = false;
             expect(provider.enablePickFeatures).toBe(false);
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
+            }).then(function () {
                 expect(provider.pickFeatures(0, 0, 0, 0.5, 0.5)).toBeUndefined();
             });
         });
 
-        it('does not return undefined if enablePickFeatures is set to true after initialization as false', function() {
+        it('does not return undefined if enablePickFeatures is set to true after initialization as false', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                enablePickFeatures : false
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                enablePickFeatures: false
             });
 
             provider.enablePickFeatures = true;
             expect(provider.enablePickFeatures).toBe(true);
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
+            }).then(function () {
                 expect(provider.pickFeatures(0, 0, 0, 0.5, 0.5)).not.toBeUndefined();
             });
         });
 
-        it('requests XML exclusively if specified in getFeatureInfoFormats', function() {
+        it('requests XML exclusively if specified in getFeatureInfoFormats', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                getFeatureInfoFormats : [
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                getFeatureInfoFormats: [
                     new GetFeatureInfoFormat('xml')
                 ]
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 expect(url).not.toContain('json');
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-MapInfoMXP.xml', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -1082,19 +1069,19 @@ defineSuite([
             });
         });
 
-        it('requests GeoJSON exclusively if specified in getFeatureInfoFormats', function() {
+        it('requests GeoJSON exclusively if specified in getFeatureInfoFormats', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                getFeatureInfoFormats : [
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                getFeatureInfoFormats: [
                     new GetFeatureInfoFormat('json')
                 ]
             });
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            }).then(function () {
+                Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                     expect(url).toContain('GetFeatureInfo');
 
                     if (url.indexOf('json') >= 0) {
@@ -1105,14 +1092,14 @@ defineSuite([
                     }
                 };
 
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(features) {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (features) {
                     expect(features.length).toBe(0);
-                }).otherwise(function() {
+                }).otherwise(function () {
                 });
             });
         });
 
-        it('uses custom GetFeatureInfo handling function if specified', function() {
+        it('uses custom GetFeatureInfo handling function if specified', function () {
             function fooProcessor(response) {
                 var json = JSON.parse(response);
                 expect(json.custom).toBe(true);
@@ -1122,17 +1109,17 @@ defineSuite([
             }
 
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer',
-                getFeatureInfoFormats : [
+                url: 'made/up/wms/server',
+                layers: 'someLayer',
+                getFeatureInfoFormats: [
                     new GetFeatureInfoFormat('foo', 'application/foo', fooProcessor)
                 ]
             });
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            }).then(function () {
+                Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                     expect(url).toContain('GetFeatureInfo');
 
                     if (url.indexOf(encodeURIComponent('application/foo')) < 0) {
@@ -1142,20 +1129,20 @@ defineSuite([
                     return Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo-Custom.json', responseType, method, data, headers, deferred, overrideMimeType);
                 };
 
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(features) {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (features) {
                     expect(features.length).toBe(1);
                     expect(features[0].name).toEqual('Foo processed!');
                 });
             });
         });
 
-        it('works with HTML response', function() {
+        it('works with HTML response', function () {
             var provider = new WebMapServiceImageryProvider({
-                url : 'made/up/wms/server',
-                layers : 'someLayer'
+                url: 'made/up/wms/server',
+                layers: 'someLayer'
             });
 
-            Resource._Implementations.loadWithXhr = function(url, responseType, method, data, headers, deferred, overrideMimeType) {
+            Resource._Implementations.loadWithXhr = function (url, responseType, method, data, headers, deferred, overrideMimeType) {
                 expect(url).toContain('GetFeatureInfo');
                 if (url.indexOf(encodeURIComponent('text/html')) < 0) {
                     deferred.reject();
@@ -1163,10 +1150,10 @@ defineSuite([
                 Resource._DefaultImplementations.loadWithXhr('Data/WMS/GetFeatureInfo.html', responseType, method, data, headers, deferred, overrideMimeType);
             };
 
-            return pollToPromise(function() {
+            return pollToPromise(function () {
                 return provider.ready;
-            }).then(function() {
-                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function(pickResult) {
+            }).then(function () {
+                return provider.pickFeatures(0, 0, 0, 0.5, 0.5).then(function (pickResult) {
                     expect(pickResult.length).toBe(1);
 
                     var firstResult = pickResult[0];
@@ -1177,4 +1164,224 @@ defineSuite([
             });
         });
     });
+
+    describe('verifyClockTimes', function() {
+        it('requires clock if times is specified', function() {
+            function createWithoutClock() {
+                return new WebMapServiceImageryProvider({
+                    layers : 'someLayer',
+                    url : 'http://wms.invalid/',
+                    times : new TimeIntervalCollection()
+                });
+            }
+
+            expect(createWithoutClock).toThrowDeveloperError();
+        });
+
+        it('tiles preload on requestImage as we approach the next time interval', function() {
+            var times = TimeIntervalCollection.fromIso8601({
+                iso8601: '2017-04-26/2017-04-30/P1D',
+                dataCallback: function(interval, index) {
+                    return {
+                        Time: JulianDate.toIso8601(interval.start)
+                    };
+                }
+            });
+            var clock = new Clock({
+                currentTime : JulianDate.fromIso8601('2017-04-26'),
+                shouldAnimate : true
+            });
+
+            var provider = new WebMapServiceImageryProvider({
+                layers : 'someLayer',
+                style : 'someStyle',
+                url : 'http://wms.invalid/',
+                clock : clock,
+                times : times
+            });
+
+            Resource._Implementations.createImage = function(request, crossOrigin, deferred) {
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
+            };
+
+            var entry;
+            return pollToPromise(function() {
+                return provider.ready;
+            })
+                .then(function() {
+                    clock.currentTime = JulianDate.fromIso8601('2017-04-26T23:59:56Z');
+                    return provider.requestImage(0, 0, 0, new Request());
+                })
+                .then(function() {
+                    RequestScheduler.update();
+
+                    // Test tile 0,0,0 was prefetched
+                    var cache = provider._timeDynamicImagery._tileCache;
+                    expect(cache['1']).toBeDefined();
+                    entry = cache['1']['0-0-0'];
+                    expect(entry).toBeDefined();
+                    expect(entry.promise).toBeDefined();
+                    return entry.promise;
+                })
+                .then(function() {
+                    expect(entry.request).toBeDefined();
+                    expect(entry.request.state).toEqual(RequestState.RECEIVED);
+                });
+        });
+
+        it('tiles preload onTick event as we approach the next time interval', function() {
+            var times = TimeIntervalCollection.fromIso8601({
+                iso8601: '2017-04-26/2017-04-30/P1D',
+                dataCallback: function(interval, index) {
+                    return {
+                        Time: JulianDate.toIso8601(interval.start)
+                    };
+                }
+            });
+            var clock = new Clock({
+                currentTime : JulianDate.fromIso8601('2017-04-26'),
+                shouldAnimate : true
+            });
+
+            var provider = new WebMapServiceImageryProvider({
+                layers : 'someLayer',
+                style : 'someStyle',
+                url : 'http://wms.invalid/',
+                clock : clock,
+                times : times
+            });
+
+            Resource._Implementations.createImage = function(request, crossOrigin, deferred) {
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
+            };
+
+            var entry;
+            return pollToPromise(function() {
+                return provider.ready;
+            })
+                .then(function() {
+                    return provider.requestImage(0, 0, 0, new Request());
+                })
+                .then(function() {
+                    // Test tile 0,0,0 wasn't prefetched
+                    var cache = provider._timeDynamicImagery._tileCache;
+                    expect(cache['1']).toBeUndefined();
+
+                    // Update the clock and process any requests
+                    clock.currentTime = JulianDate.fromIso8601('2017-04-26T23:59:55Z');
+                    clock.tick();
+                    RequestScheduler.update();
+
+                    // Test tile 0,0,0 was prefetched
+                    expect(cache['1']).toBeDefined();
+                    entry = cache['1']['0-0-0'];
+                    expect(entry).toBeDefined();
+                    expect(entry.promise).toBeDefined();
+                    return entry.promise;
+                })
+                .then(function() {
+                    expect(entry.request).toBeDefined();
+                    expect(entry.request.state).toEqual(RequestState.RECEIVED);
+                });
+        });
+
+        it('reload is called once we cross into next interval', function() {
+            var times = TimeIntervalCollection.fromIso8601({
+                iso8601: '2017-04-26/2017-04-30/P1D',
+                dataCallback: function(interval, index) {
+                    return {
+                        Time: JulianDate.toIso8601(interval.start)
+                    };
+                }
+            });
+            var clock = new Clock({
+                currentTime : JulianDate.fromIso8601('2017-04-26'),
+                clockStep : ClockStep.TICK_DEPENDENT,
+                shouldAnimate : true
+            });
+
+            Resource._Implementations.createImage = function(request, crossOrigin, deferred) {
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
+            };
+
+            var provider = new WebMapServiceImageryProvider({
+                layers : 'someLayer',
+                style : 'someStyle',
+                url : 'http://wms.invalid/',
+                clock : clock,
+                times : times
+            });
+
+            provider._reload = jasmine.createSpy();
+            spyOn(provider._timeDynamicImagery, 'getFromCache').and.callThrough();
+
+            return pollToPromise(function() {
+                return provider.ready;
+            })
+                .then(function() {
+                    clock.currentTime = JulianDate.fromIso8601('2017-04-26T23:59:59Z');
+                    return provider.requestImage(0, 0, 0, new Request());
+                })
+                .then(function() {
+                    RequestScheduler.update();
+                    clock.tick();
+
+                    return provider.requestImage(0, 0, 0, new Request());
+                })
+                .then(function() {
+                    expect(provider._reload.calls.count()).toEqual(1);
+
+                    var calls = provider._timeDynamicImagery.getFromCache.calls.all();
+                    expect(calls.length).toBe(2);
+                    expect(calls[0].returnValue).toBeUndefined();
+                    expect(calls[1].returnValue).toBeDefined();
+                });
+            });
+
+        it('Data in request comes from the time interval collection', function() {
+            var times = TimeIntervalCollection.fromIso8601({
+                iso8601: '2017-04-26/2017-04-30/P1D',
+                dataCallback: function(interval, index) {
+                    return {
+                        Time: JulianDate.toIso8601(interval.start),
+                        Test: 'testValue'
+                    };
+                }
+            });
+            var clock = new Clock({
+                currentTime : JulianDate.fromIso8601('2017-04-26'),
+                clockStep : ClockStep.TICK_DEPENDENT,
+                shouldAnimate : false
+            });
+
+            Resource._Implementations.createImage = function(request, crossOrigin, deferred) {
+                Resource._DefaultImplementations.createImage(new Request({url: 'Data/Images/Red16x16.png'}), crossOrigin, deferred);
+            };
+
+            var provider = new WebMapServiceImageryProvider({
+                layers : 'someLayer',
+                style : 'someStyle',
+                url : 'http://wms.invalid/',
+                clock : clock,
+                times : times
+            });
+
+            provider._reload = jasmine.createSpy();
+            spyOn(provider._timeDynamicImagery, 'getFromCache').and.callThrough();
+
+            return pollToPromise(function() {
+                return provider.ready;
+            })
+                .then(function() {
+                    return provider.requestImage(0, 0, 0, new Request());
+                })
+                .then(function() {
+                    var queryParameters = provider._tileProvider._resource.queryParameters;
+                    expect(queryParameters.Time).toEqual('2017-04-26T00:00:00Z');
+                    expect(queryParameters.Test).toEqual('testValue');
+
+                });
+            });
+
+        });
 });

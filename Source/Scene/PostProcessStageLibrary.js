@@ -1,58 +1,32 @@
-define([
-        '../Core/buildModuleUrl',
-        '../Core/createGuid',
-        '../Core/Color',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/deprecationWarning',
-        '../Core/destroyObject',
-        '../Core/Ellipsoid',
-        '../Shaders/PostProcessStages/AmbientOcclusionGenerate',
-        '../Shaders/PostProcessStages/AmbientOcclusionModulate',
-        '../Shaders/PostProcessStages/BlackAndWhite',
-        '../Shaders/PostProcessStages/BloomComposite',
-        '../Shaders/PostProcessStages/Brightness',
-        '../Shaders/PostProcessStages/ContrastBias',
-        '../Shaders/PostProcessStages/DepthOfField',
-        '../Shaders/PostProcessStages/DepthView',
-        '../Shaders/PostProcessStages/EdgeDetection',
-        '../Shaders/PostProcessStages/FXAA',
-        '../Shaders/PostProcessStages/GaussianBlur1D',
-        '../Shaders/PostProcessStages/LensFlare',
-        '../Shaders/PostProcessStages/NightVision',
-        '../Shaders/PostProcessStages/Silhouette',
-        '../ThirdParty/Shaders/FXAA3_11',
-        './PostProcessStage',
-        './PostProcessStageComposite',
-        './PostProcessStageSampleMode'
-    ], function(
-        buildModuleUrl,
-        createGuid,
-        Color,
-        defined,
-        defineProperties,
-        deprecationWarning,
-        destroyObject,
-        Ellipsoid,
-        AmbientOcclusionGenerate,
-        AmbientOcclusionModulate,
-        BlackAndWhite,
-        BloomComposite,
-        Brightness,
-        ContrastBias,
-        DepthOfField,
-        DepthView,
-        EdgeDetection,
-        FXAA,
-        GaussianBlur1D,
-        LensFlare,
-        NightVision,
-        Silhouette,
-        FXAA3_11,
-        PostProcessStage,
-        PostProcessStageComposite,
-        PostProcessStageSampleMode) {
-    'use strict';
+import buildModuleUrl from '../Core/buildModuleUrl.js';
+import Color from '../Core/Color.js';
+import createGuid from '../Core/createGuid.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import Ellipsoid from '../Core/Ellipsoid.js';
+import AcesTonemapping from '../Shaders/PostProcessStages/AcesTonemappingStage.js';
+import AmbientOcclusionGenerate from '../Shaders/PostProcessStages/AmbientOcclusionGenerate.js';
+import AmbientOcclusionModulate from '../Shaders/PostProcessStages/AmbientOcclusionModulate.js';
+import BlackAndWhite from '../Shaders/PostProcessStages/BlackAndWhite.js';
+import BloomComposite from '../Shaders/PostProcessStages/BloomComposite.js';
+import Brightness from '../Shaders/PostProcessStages/Brightness.js';
+import ContrastBias from '../Shaders/PostProcessStages/ContrastBias.js';
+import DepthOfField from '../Shaders/PostProcessStages/DepthOfField.js';
+import DepthView from '../Shaders/PostProcessStages/DepthView.js';
+import EdgeDetection from '../Shaders/PostProcessStages/EdgeDetection.js';
+import FilmicTonemapping from '../Shaders/PostProcessStages/FilmicTonemapping.js';
+import FXAA from '../Shaders/PostProcessStages/FXAA.js';
+import GaussianBlur1D from '../Shaders/PostProcessStages/GaussianBlur1D.js';
+import LensFlare from '../Shaders/PostProcessStages/LensFlare.js';
+import ModifiedReinhardTonemapping from '../Shaders/PostProcessStages/ModifiedReinhardTonemapping.js';
+import NightVision from '../Shaders/PostProcessStages/NightVision.js';
+import ReinhardTonemapping from '../Shaders/PostProcessStages/ReinhardTonemapping.js';
+import Silhouette from '../Shaders/PostProcessStages/Silhouette.js';
+import FXAA3_11 from '../ThirdParty/Shaders/FXAA3_11.js';
+import AutoExposure from './AutoExposure.js';
+import PostProcessStage from './PostProcessStage.js';
+import PostProcessStageComposite from './PostProcessStageComposite.js';
+import PostProcessStageSampleMode from './PostProcessStageSampleMode.js';
 
     /**
      * Contains functions for creating common post-process stages.
@@ -686,6 +660,88 @@ define([
     };
 
     /**
+     * Creates a post-process stage that applies ACES tonemapping operator.
+     * @param {Boolean} useAutoExposure Whether or not to use auto-exposure.
+     * @return {PostProcessStage} A post-process stage that applies ACES tonemapping operator.
+     * @private
+     */
+    PostProcessStageLibrary.createAcesTonemappingStage = function(useAutoExposure) {
+        var fs = useAutoExposure ? '#define AUTO_EXPOSURE\n' : '';
+        fs += AcesTonemapping;
+        return new PostProcessStage({
+            name : 'czm_aces',
+            fragmentShader : fs,
+            uniforms : {
+                autoExposure : undefined
+            }
+        });
+    };
+
+    /**
+     * Creates a post-process stage that applies filmic tonemapping operator.
+     * @param {Boolean} useAutoExposure Whether or not to use auto-exposure.
+     * @return {PostProcessStage} A post-process stage that applies filmic tonemapping operator.
+     * @private
+     */
+    PostProcessStageLibrary.createFilmicTonemappingStage = function(useAutoExposure) {
+        var fs = useAutoExposure ? '#define AUTO_EXPOSURE\n' : '';
+        fs += FilmicTonemapping;
+        return new PostProcessStage({
+            name : 'czm_filmic',
+            fragmentShader : fs,
+            uniforms : {
+                autoExposure : undefined
+            }
+        });
+    };
+
+    /**
+     * Creates a post-process stage that applies Reinhard tonemapping operator.
+     * @param {Boolean} useAutoExposure Whether or not to use auto-exposure.
+     * @return {PostProcessStage} A post-process stage that applies Reinhard tonemapping operator.
+     * @private
+     */
+    PostProcessStageLibrary.createReinhardTonemappingStage = function(useAutoExposure) {
+        var fs = useAutoExposure ? '#define AUTO_EXPOSURE\n' : '';
+        fs += ReinhardTonemapping;
+        return new PostProcessStage({
+            name : 'czm_reinhard',
+            fragmentShader : fs,
+            uniforms : {
+                autoExposure : undefined
+            }
+        });
+    };
+
+    /**
+     * Creates a post-process stage that applies modified Reinhard tonemapping operator.
+     * @param {Boolean} useAutoExposure Whether or not to use auto-exposure.
+     * @return {PostProcessStage} A post-process stage that applies modified Reinhard tonemapping operator.
+     * @private
+     */
+    PostProcessStageLibrary.createModifiedReinhardTonemappingStage = function(useAutoExposure) {
+        var fs = useAutoExposure ? '#define AUTO_EXPOSURE\n' : '';
+        fs += ModifiedReinhardTonemapping;
+        return new PostProcessStage({
+            name : 'czm_modified_reinhard',
+            fragmentShader : fs,
+            uniforms : {
+                white : Color.WHITE,
+                autoExposure : undefined
+            }
+        });
+    };
+
+    /**
+     * Creates a post-process stage that finds the average luminance of the input texture.
+     * @return {PostProcessStage} A post-process stage that finds the average luminance of the input texture.
+     * @private
+     */
+    PostProcessStageLibrary.createAutoExposureStage = function() {
+        return new AutoExposure();
+    };
+
+    /**
      * Creates a post-process stage that renders the input texture with black and white gradations.
      * <p>
      * This stage has one uniform value, <code>gradations</code>, which scales the luminance of each pixel.
@@ -747,7 +803,7 @@ define([
      * Creates a post-process stage that applies an effect simulating light flaring a camera lens.
      * <p>
      * This stage has the following uniforms: <code>dirtTexture</code>, <code>starTexture</code>, <code>intensity</code>, <code>distortion</code>, <code>ghostDispersal</code>,
-     * <code>haloWidth</code>, and <code>earthRadius</code>.
+     * <code>haloWidth</code>, <code>dirtAmount</code>, and <code>earthRadius</code>.
      * <ul>
      * <li><code>dirtTexture</code> is a texture sampled to simulate dirt on the lens.</li>
      * <li><code>starTexture</code> is the texture sampled for the star pattern of the flare.</li>
@@ -755,6 +811,7 @@ define([
      * <li><code>distortion</code> is a scalar value that affects the chromatic effect distortion. The default value is <code>10.0</code>.</li>
      * <li><code>ghostDispersal</code> is a scalar indicating how far the halo effect is from the center of the texture. The default value is <code>0.4</code>.</li>
      * <li><code>haloWidth</code> is a scalar representing the width of the halo  from the ghost dispersal. The default value is <code>0.4</code>.</li>
+     * <li><code>dirtAmount</code> is a scalar representing the amount of dirt on the lens. The default value is <code>0.4</code>.</li>
      * <li><code>earthRadius</code> is the maximum radius of the earth. The default value is <code>Ellipsoid.WGS84.maximumRadius</code>.</li>
      * </ul>
      * </p>
@@ -771,10 +828,9 @@ define([
                 distortion : 10.0,
                 ghostDispersal : 0.4,
                 haloWidth : 0.4,
+                dirtAmount : 0.4,
                 earthRadius : Ellipsoid.WGS84.maximumRadius
             }
         });
     };
-
-    return PostProcessStageLibrary;
-});
+export default PostProcessStageLibrary;

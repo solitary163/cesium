@@ -1,27 +1,20 @@
-define([
-        '../Core/defaultValue',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/VertexFormat',
-        '../Shaders/Appearances/PolylineMaterialAppearanceVS',
-        '../Shaders/PolylineCommon',
-        '../Shaders/PolylineFS',
-        './Appearance',
-        './Material'
-    ], function(
-        defaultValue,
-        defined,
-        defineProperties,
-        VertexFormat,
-        PolylineMaterialAppearanceVS,
-        PolylineCommon,
-        PolylineFS,
-        Appearance,
-        Material) {
-    'use strict';
+import defaultValue from '../Core/defaultValue.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import FeatureDetection from '../Core/FeatureDetection.js';
+import VertexFormat from '../Core/VertexFormat.js';
+import PolylineMaterialAppearanceVS from '../Shaders/Appearances/PolylineMaterialAppearanceVS.js';
+import PolylineCommon from '../Shaders/PolylineCommon.js';
+import PolylineFS from '../Shaders/PolylineFS.js';
+import Appearance from './Appearance.js';
+import Material from './Material.js';
 
     var defaultVertexShaderSource = PolylineCommon + '\n' + PolylineMaterialAppearanceVS;
     var defaultFragmentShaderSource = PolylineFS;
+
+    if (!FeatureDetection.isInternetExplorer()) {
+        defaultVertexShaderSource = '#define CLIP_POLYLINE \n' + defaultVertexShaderSource;
+    }
 
     /**
      * An appearance for {@link PolylineGeometry} that supports shading with materials.
@@ -36,7 +29,7 @@ define([
      * @param {String} [options.fragmentShaderSource] Optional GLSL fragment shader source to override the default fragment shader.
      * @param {RenderState} [options.renderState] Optional render state to override the default render state.
      *
-     * @see {@link https://github.com/AnalyticalGraphicsInc/cesium/wiki/Fabric|Fabric}
+     * @see {@link https://github.com/CesiumGS/cesium/wiki/Fabric|Fabric}
      *
      * @example
      * var primitive = new Cesium.Primitive({
@@ -70,7 +63,7 @@ define([
          *
          * @default {@link Material.ColorType}
          *
-         * @see {@link https://github.com/AnalyticalGraphicsInc/cesium/wiki/Fabric|Fabric}
+         * @see {@link https://github.com/CesiumGS/cesium/wiki/Fabric|Fabric}
          */
         this.material = defined(options.material) ? options.material : Material.fromType(Material.ColorType);
 
@@ -222,6 +215,4 @@ define([
      * @returns {Object} The render state.
      */
     PolylineMaterialAppearance.prototype.getRenderState = Appearance.prototype.getRenderState;
-
-    return PolylineMaterialAppearance;
-});
+export default PolylineMaterialAppearance;

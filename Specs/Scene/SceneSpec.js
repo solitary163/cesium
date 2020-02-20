@@ -1,94 +1,51 @@
-defineSuite([
-        'Scene/Scene',
-        'Core/BoundingSphere',
-        'Core/Cartesian2',
-        'Core/Cartesian3',
-        'Core/CesiumTerrainProvider',
-        'Core/Color',
-        'Core/defined',
-        'Core/Ellipsoid',
-        'Core/GeographicProjection',
-        'Core/GeometryInstance',
-        'Core/HeadingPitchRoll',
-        'Core/JulianDate',
-        'Core/Math',
-        'Core/PerspectiveFrustum',
-        'Core/PixelFormat',
-        'Core/Rectangle',
-        'Core/RectangleGeometry',
-        'Core/RequestScheduler',
-        'Core/RuntimeError',
-        'Core/TaskProcessor',
-        'Core/WebGLConstants',
-        'Core/WebMercatorProjection',
-        'Renderer/DrawCommand',
-        'Renderer/Framebuffer',
-        'Renderer/Pass',
-        'Renderer/PixelDatatype',
-        'Renderer/RenderState',
-        'Renderer/ShaderProgram',
-        'Renderer/ShaderSource',
-        'Renderer/Texture',
-        'Scene/Camera',
-        'Scene/EllipsoidSurfaceAppearance',
-        'Scene/FrameState',
-        'Scene/Globe',
-        'Scene/Material',
-        'Scene/Primitive',
-        'Scene/PrimitiveCollection',
-        'Scene/SceneTransforms',
-        'Scene/ScreenSpaceCameraController',
-        'Scene/TweenCollection',
-        'Specs/createCanvas',
-        'Specs/createScene',
-        'Specs/pollToPromise',
-        'Specs/render'
-    ], function(
-        Scene,
-        BoundingSphere,
-        Cartesian2,
-        Cartesian3,
-        CesiumTerrainProvider,
-        Color,
-        defined,
-        Ellipsoid,
-        GeographicProjection,
-        GeometryInstance,
-        HeadingPitchRoll,
-        JulianDate,
-        CesiumMath,
-        PerspectiveFrustum,
-        PixelFormat,
-        Rectangle,
-        RectangleGeometry,
-        RequestScheduler,
-        RuntimeError,
-        TaskProcessor,
-        WebGLConstants,
-        WebMercatorProjection,
-        DrawCommand,
-        Framebuffer,
-        Pass,
-        PixelDatatype,
-        RenderState,
-        ShaderProgram,
-        ShaderSource,
-        Texture,
-        Camera,
-        EllipsoidSurfaceAppearance,
-        FrameState,
-        Globe,
-        Material,
-        Primitive,
-        PrimitiveCollection,
-        SceneTransforms,
-        ScreenSpaceCameraController,
-        TweenCollection,
-        createCanvas,
-        createScene,
-        pollToPromise,
-        render) {
-    'use strict';
+import { BoundingSphere } from '../../Source/Cesium.js';
+import { Cartesian2 } from '../../Source/Cesium.js';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { CesiumTerrainProvider } from '../../Source/Cesium.js';
+import { Color } from '../../Source/Cesium.js';
+import { defined } from '../../Source/Cesium.js';
+import { Ellipsoid } from '../../Source/Cesium.js';
+import { GeographicProjection } from '../../Source/Cesium.js';
+import { GeometryInstance } from '../../Source/Cesium.js';
+import { HeadingPitchRoll } from '../../Source/Cesium.js';
+import { JulianDate } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { PerspectiveFrustum } from '../../Source/Cesium.js';
+import { PixelFormat } from '../../Source/Cesium.js';
+import { Rectangle } from '../../Source/Cesium.js';
+import { RectangleGeometry } from '../../Source/Cesium.js';
+import { RequestScheduler } from '../../Source/Cesium.js';
+import { RuntimeError } from '../../Source/Cesium.js';
+import { TaskProcessor } from '../../Source/Cesium.js';
+import { WebGLConstants } from '../../Source/Cesium.js';
+import { WebMercatorProjection } from '../../Source/Cesium.js';
+import { DrawCommand } from '../../Source/Cesium.js';
+import { Framebuffer } from '../../Source/Cesium.js';
+import { Pass } from '../../Source/Cesium.js';
+import { PixelDatatype } from '../../Source/Cesium.js';
+import { RenderState } from '../../Source/Cesium.js';
+import { ShaderProgram } from '../../Source/Cesium.js';
+import { ShaderSource } from '../../Source/Cesium.js';
+import { Texture } from '../../Source/Cesium.js';
+import { Camera } from '../../Source/Cesium.js';
+import { DirectionalLight } from '../../Source/Cesium.js';
+import { EllipsoidSurfaceAppearance } from '../../Source/Cesium.js';
+import { FrameState } from '../../Source/Cesium.js';
+import { Globe } from '../../Source/Cesium.js';
+import { Material } from '../../Source/Cesium.js';
+import { Primitive } from '../../Source/Cesium.js';
+import { PrimitiveCollection } from '../../Source/Cesium.js';
+import { Scene } from '../../Source/Cesium.js';
+import { SceneTransforms } from '../../Source/Cesium.js';
+import { ScreenSpaceCameraController } from '../../Source/Cesium.js';
+import { SunLight } from '../../Source/Cesium.js';
+import { TweenCollection } from '../../Source/Cesium.js';
+import createCanvas from '../createCanvas.js';
+import createScene from '../createScene.js';
+import pollToPromise from '../pollToPromise.js';
+import render from '../render.js';
+
+describe('Scene/Scene', function() {
 
     var scene;
     var simpleShaderProgram;
@@ -195,9 +152,9 @@ defineSuite([
     });
 
     it('constructor throws without options.canvas', function() {
-      expect(function() {
-          return new Scene({});
-      }).toThrowDeveloperError();
+        expect(function() {
+            return new Scene({});
+        }).toThrowDeveloperError();
     });
 
     it('draws background color', function() {
@@ -574,6 +531,24 @@ defineSuite([
             });
         });
 
+        it('renders a globe with AspectRamp', function() {
+            s.globe = new Globe(Ellipsoid.UNIT_SPHERE);
+            s.globe.material = Material.fromType('AspectRamp');
+            s.camera.position = new Cartesian3(1.02, 0.0, 0.0);
+            s.camera.up = Cartesian3.clone(Cartesian3.UNIT_Z);
+            s.camera.direction = Cartesian3.negate(Cartesian3.normalize(s.camera.position, new Cartesian3()), new Cartesian3());
+
+            // To avoid Jasmine's spec has no expectations error
+            expect(true).toEqual(true);
+
+            return expect(s).toRenderAndCall(function() {
+                return pollToPromise(function() {
+                    render(s.frameState, s.globe);
+                    return !jasmine.matchersUtil.equals(s._context.readPixels(), [0, 0, 0, 0]);
+                });
+            });
+        });
+
         it('renders a globe with a ElevationRamp', function() {
             s.globe = new Globe(Ellipsoid.UNIT_SPHERE);
             s.globe.material = Material.fromType('ElevationRamp');
@@ -693,6 +668,34 @@ defineSuite([
 
         expect(s).toRenderAndCall(function(rgba) {
             expect(rgba[0]).not.toEqual(0);
+            expect(rgba[1]).toEqual(0);
+            expect(rgba[2]).toEqual(0);
+        });
+
+        s.destroyForSpecs();
+    });
+
+    it('renders with HDR when available', function() {
+        if (!scene.highDynamicRangeSupported) {
+            return;
+        }
+
+        var s = createScene();
+        s.highDynamicRange = true;
+
+        var rectangle = Rectangle.fromDegrees(-100.0, 30.0, -90.0, 40.0);
+
+        var rectanglePrimitive = createRectangle(rectangle, 1000.0);
+        rectanglePrimitive.appearance.material.uniforms.color = new Color(10.0, 0.0, 0.0, 1.0);
+
+        var primitives = s.primitives;
+        primitives.add(rectanglePrimitive);
+
+        s.camera.setView({ destination : rectangle });
+
+        expect(s).toRenderAndCall(function(rgba) {
+            expect(rgba[0]).toBeGreaterThan(0);
+            expect(rgba[0]).toBeLessThanOrEqualTo(255);
             expect(rgba[1]).toEqual(0);
             expect(rgba[2]).toEqual(0);
         });
@@ -1071,9 +1074,12 @@ defineSuite([
         var spyListener = jasmine.createSpy('listener');
         s.camera.moveEnd.addEventListener(spyListener);
 
-        s.cameraEventWaitTime = 0.0;
+        // We use negative time here to ensure the event runs on the next frame.
+        s.cameraEventWaitTime = -1.0;
         s.camera.moveLeft();
+        // The first render will trigger the moveStart event.
         s.render();
+        // The second will trigger the moveEnd.
         s.render();
 
         expect(spyListener.calls.count()).toBe(1);
@@ -1305,13 +1311,12 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
 
         scene.requestRenderMode = true;
         scene.maximumRenderTimeChange = undefined;
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).toEqualEpsilon(lastRenderTime, CesiumMath.EPSILON15);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1321,8 +1326,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1332,7 +1336,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1342,8 +1346,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1352,7 +1355,7 @@ defineSuite([
         scene.camera.moveLeft();
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1362,8 +1365,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1373,12 +1375,12 @@ defineSuite([
 
         // Render once properly
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         // Render again - but this time nothing should happen.
-        lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
+        lastFrameNumber = scene.frameState.frameNumber;
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1388,8 +1390,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1402,7 +1403,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1412,8 +1413,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1426,7 +1426,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1436,8 +1436,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1454,7 +1453,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1464,8 +1463,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1478,11 +1476,11 @@ defineSuite([
         scene.requestRender();
         Object.defineProperty(globe, 'tilesLoaded', { value: false });
         scene.renderForSpecs();
-        lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
+        lastFrameNumber = scene.frameState.frameNumber;
 
         expect(scene._renderRequested).toBe(true);
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1492,8 +1490,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1509,7 +1506,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1519,8 +1516,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
@@ -1536,7 +1532,7 @@ defineSuite([
         expect(scene._renderRequested).toBe(true);
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1545,6 +1541,7 @@ defineSuite([
         var scene = createScene();
         scene.renderForSpecs();
 
+        var lastFrameNumber = scene.frameState.frameNumber;
         var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
         expect(lastRenderTime).toBeDefined();
         expect(scene._renderRequested).toBe(false);
@@ -1554,38 +1551,40 @@ defineSuite([
 
         scene.morphTo2D(1.0);
         scene.renderForSpecs(JulianDate.addSeconds(lastRenderTime, 0.5, new JulianDate()));
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.completeMorph();
         scene.renderForSpecs();
-        lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
+        lastFrameNumber = scene.frameState.frameNumber;
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).toEqualEpsilon(lastRenderTime, CesiumMath.EPSILON15);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
+        lastFrameNumber = scene.frameState.frameNumber;
         lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
 
         scene.morphToColumbusView(1.0);
         scene.renderForSpecs(JulianDate.addSeconds(lastRenderTime, 0.5, new JulianDate()));
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.completeMorph();
         scene.renderForSpecs();
-        lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
+        lastFrameNumber = scene.frameState.frameNumber;
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).toEqualEpsilon(lastRenderTime, CesiumMath.EPSILON15);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
+        lastFrameNumber = scene.frameState.frameNumber;
         lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
 
         scene.morphTo3D(1.0);
         scene.renderForSpecs(JulianDate.addSeconds(lastRenderTime, 0.5, new JulianDate()));
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.completeMorph();
         scene.renderForSpecs();
-        lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
+        lastFrameNumber = scene.frameState.frameNumber;
 
         scene.renderForSpecs();
-        expect(scene.lastRenderTime).toEqualEpsilon(lastRenderTime, CesiumMath.EPSILON15);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1595,6 +1594,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
+        var lastFrameNumber = scene.frameState.frameNumber;
         var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
         expect(lastRenderTime).toBeDefined();
         expect(scene._renderRequested).toBe(false);
@@ -1602,15 +1602,15 @@ defineSuite([
         scene.requestRenderMode = true;
 
         scene.renderForSpecs(lastRenderTime);
-        expect(scene.lastRenderTime).toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.maximumRenderTimeChange = 100.0;
 
         scene.renderForSpecs(JulianDate.addSeconds(lastRenderTime, 50.0, new JulianDate()));
-        expect(scene.lastRenderTime).toEqualEpsilon(lastRenderTime, CesiumMath.EPSILON15);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.renderForSpecs(JulianDate.addSeconds(lastRenderTime, 150.0, new JulianDate()));
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1620,6 +1620,7 @@ defineSuite([
 
         scene.renderForSpecs();
 
+        var lastFrameNumber = scene.frameState.frameNumber;
         var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
         expect(lastRenderTime).toBeDefined();
         expect(scene._renderRequested).toBe(false);
@@ -1632,7 +1633,7 @@ defineSuite([
         scene.renderForSpecs();
         scene.renderForSpecs(farFuture);
 
-        expect(scene.lastRenderTime).toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1642,15 +1643,14 @@ defineSuite([
 
         scene.renderForSpecs();
 
-        var lastRenderTime = JulianDate.clone(scene.lastRenderTime, scratchTime);
-        expect(lastRenderTime).toBeDefined();
+        var lastFrameNumber = scene.frameState.frameNumber;
         expect(scene._renderRequested).toBe(false);
 
         scene.requestRenderMode = true;
         scene.maximumRenderTimeChange = undefined;
 
         scene.forceRender();
-        expect(scene.lastRenderTime).not.toEqual(lastRenderTime);
+        expect(scene.frameState.frameNumber).not.toEqual(lastFrameNumber);
 
         scene.destroyForSpecs();
     });
@@ -1694,6 +1694,72 @@ defineSuite([
         scene.globe.show = false;
         scene.renderForSpecs();
         expect(getFrustumCommandsLength(scene)).toBe(1);
+
+        scene.destroyForSpecs();
+    });
+
+    it('does not occlude if DrawCommand.occlude is false', function() {
+        var scene = createScene();
+        scene.globe = new Globe(Ellipsoid.WGS84);
+
+        var rectangle = Rectangle.fromDegrees(-100.0, 30.0, -90.0, 40.0);
+        var rectanglePrimitive = createRectangle(rectangle, 10);
+        scene.primitives.add(rectanglePrimitive);
+
+        scene.renderForSpecs();
+        rectanglePrimitive._colorCommands[0].occlude = false;
+
+        scene.camera.setView({
+            destination: new Cartesian3(-5754647.167415793, 14907694.100240812, -483807.2406259497),
+            orientation: new HeadingPitchRoll(6.283185307179586, -1.5698869547885104, 0.0)
+        });
+        scene.renderForSpecs();
+        expect(getFrustumCommandsLength(scene)).toBe(1);
+
+        scene.destroyForSpecs();
+    });
+
+    it('sets light', function() {
+        var scene = createScene();
+        var uniformState = scene.context.uniformState;
+        var lightDirectionWC = uniformState._lightDirectionWC;
+        var sunDirectionWC = uniformState._sunDirectionWC;
+        var lightColor = uniformState._lightColor;
+        var lightColorHdr = uniformState._lightColorHdr;
+
+        // Default light is a sun light
+        scene.renderForSpecs();
+        expect(lightDirectionWC).toEqual(sunDirectionWC);
+        expect(lightColor).toEqual(new Cartesian3(1.0, 1.0, 1.0));
+        expect(lightColorHdr).toEqual(new Cartesian3(2.0, 2.0, 2.0));
+
+        // Test directional light
+        scene.light = new DirectionalLight({
+            direction : new Cartesian3(1.0, 0.0, 0.0),
+            color : Color.RED,
+            intensity : 2.0
+        });
+        scene.renderForSpecs();
+        expect(lightDirectionWC).toEqual(new Cartesian3(-1.0, 0.0, 0.0)); // Negated because the uniform is the direction to the light, not from the light
+        expect(lightColor).toEqual(new Cartesian3(1.0, 0.0, 0.0));
+        expect(lightColorHdr).toEqual(new Cartesian3(2.0, 0.0, 0.0));
+
+        // Test sun light
+        scene.light = new SunLight({
+            color : Color.BLUE,
+            intensity : 0.5
+        });
+        scene.renderForSpecs();
+        expect(lightDirectionWC).toEqual(sunDirectionWC);
+        expect(lightColor).toEqual(new Cartesian3(0.0, 0.0, 0.5));
+        expect(lightColorHdr).toEqual(new Cartesian3(0.0, 0.0, 0.5));
+
+        // Test light set to undefined
+        scene.light = undefined;
+        scene.renderForSpecs();
+        expect(lightDirectionWC).toEqual(sunDirectionWC);
+        expect(lightColor).toEqual(new Cartesian3(1.0, 1.0, 1.0));
+        expect(lightColorHdr).toEqual(new Cartesian3(2.0, 2.0, 2.0));
 
         scene.destroyForSpecs();
     });

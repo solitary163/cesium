@@ -1,50 +1,23 @@
-define([
-        '../Core/BoundingRectangle',
-        '../Core/Cartesian3',
-        '../Core/CullingVolume',
-        '../Core/defined',
-        '../Core/getTimestamp',
-        '../Core/Interval',
-        '../Core/Math',
-        '../Core/Matrix4',
-        '../Core/OrthographicFrustum',
-        '../Core/OrthographicOffCenterFrustum',
-        '../Renderer/ClearCommand',
-        '../Renderer/Pass',
-        '../Renderer/PassState',
-        './Camera',
-        './FrustumCommands',
-        './GlobeDepth',
-        './OIT',
-        './PickDepthFramebuffer',
-        './PickFramebuffer',
-        './SceneFramebuffer',
-        './SceneMode',
-        './ShadowMap'
-    ], function(
-        BoundingRectangle,
-        Cartesian3,
-        CullingVolume,
-        defined,
-        getTimestamp,
-        Interval,
-        CesiumMath,
-        Matrix4,
-        OrthographicFrustum,
-        OrthographicOffCenterFrustum,
-        ClearCommand,
-        Pass,
-        PassState,
-        Camera,
-        FrustumCommands,
-        GlobeDepth,
-        OIT,
-        PickDepthFramebuffer,
-        PickFramebuffer,
-        SceneFramebuffer,
-        SceneMode,
-        ShadowMap) {
-    'use strict';
+import BoundingRectangle from '../Core/BoundingRectangle.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import CullingVolume from '../Core/CullingVolume.js';
+import defined from '../Core/defined.js';
+import getTimestamp from '../Core/getTimestamp.js';
+import Interval from '../Core/Interval.js';
+import CesiumMath from '../Core/Math.js';
+import Matrix4 from '../Core/Matrix4.js';
+import ClearCommand from '../Renderer/ClearCommand.js';
+import Pass from '../Renderer/Pass.js';
+import PassState from '../Renderer/PassState.js';
+import Camera from './Camera.js';
+import FrustumCommands from './FrustumCommands.js';
+import GlobeDepth from './GlobeDepth.js';
+import OIT from './OIT.js';
+import PickDepthFramebuffer from './PickDepthFramebuffer.js';
+import PickFramebuffer from './PickFramebuffer.js';
+import SceneFramebuffer from './SceneFramebuffer.js';
+import SceneMode from './SceneMode.js';
+import ShadowMap from './ShadowMap.js';
 
     /**
      * @private
@@ -60,7 +33,7 @@ define([
         var farToNearRatio = scene.logarithmicDepthBuffer ? scene.logarithmicDepthFarToNearRatio : scene.farToNearRatio;
 
         var numFrustums = Math.ceil(Math.log(far / near) / Math.log(farToNearRatio));
-        updateFrustums(near, far, farToNearRatio, numFrustums, scene.logarithmicDepthBuffer, frustumCommandsList, false, undefined, false, undefined);
+        updateFrustums(near, far, farToNearRatio, numFrustums, scene.logarithmicDepthBuffer, frustumCommandsList, false, undefined);
 
         var globeDepth;
         if (context.depthTexture) {
@@ -137,7 +110,7 @@ define([
         return false;
     };
 
-    function updateFrustums(near, far, farToNearRatio, numFrustums, logDepth, frustumCommandsList, is2D, nearToFarDistance2D, isOrthographic, nearToFarDistanceOrthographic) {
+    function updateFrustums(near, far, farToNearRatio, numFrustums, logDepth, frustumCommandsList, is2D, nearToFarDistance2D) {
         frustumCommandsList.length = numFrustums;
         for (var m = 0; m < numFrustums; ++m) {
             var curNear;
@@ -146,9 +119,6 @@ define([
             if (is2D) {
                 curNear = Math.min(far - nearToFarDistance2D, near + m * nearToFarDistance2D);
                 curFar = Math.min(far, curNear + nearToFarDistance2D);
-            } else if (isOrthographic) {
-                curNear = near + nearToFarDistanceOrthographic * m;
-                curFar = Math.min(far, curNear + nearToFarDistanceOrthographic);
             } else  {
                 curNear = Math.max(near, Math.pow(farToNearRatio, m) * near);
                 curFar = farToNearRatio * curNear;
@@ -336,7 +306,6 @@ define([
         // Exploit temporal coherence. If the frustums haven't changed much, use the frustums computed
         // last frame, else compute the new frustums and sort them by frustum again.
         var is2D = scene.mode === SceneMode.SCENE2D;
-        var isOrthographic = (scene.camera.frustum instanceof OrthographicFrustum || scene.camera.frustum instanceof OrthographicOffCenterFrustum);
         var logDepth = frameState.useLogDepth;
         var farToNearRatio = logDepth ? scene.logarithmicDepthFarToNearRatio : scene.farToNearRatio;
         var numFrustums;
@@ -348,9 +317,6 @@ define([
             far = Math.min(far, camera.position.z + scene.nearToFarDistance2D);
             near = Math.min(near, far);
             numFrustums = Math.ceil(Math.max(1.0, far - near) / scene.nearToFarDistance2D);
-        } else if (isOrthographic) {
-            // The multifrustum for orthographic is uniformly distributed.
-            numFrustums = Math.ceil(Math.max(1.0, far - near) / scene.nearToFarDistanceOrthographic);
         } else {
             // The multifrustum for 3D/CV is non-uniformly distributed.
             numFrustums = Math.ceil(Math.log(far / near) / Math.log(farToNearRatio));
@@ -359,7 +325,7 @@ define([
         if (this.updateFrustums || (near !== Number.MAX_VALUE && (numFrustums !== numberOfFrustums || (frustumCommandsList.length !== 0 &&
                 (near < frustumCommandsList[0].near || (far > frustumCommandsList[numberOfFrustums - 1].far && (logDepth || !CesiumMath.equalsEpsilon(far, frustumCommandsList[numberOfFrustums - 1].far, CesiumMath.EPSILON8)))))))) {
             this.updateFrustums = false;
-            updateFrustums(near, far, farToNearRatio, numFrustums, logDepth, frustumCommandsList, is2D, scene.nearToFarDistance2D, isOrthographic, scene.nearToFarDistanceOrthographic);
+            updateFrustums(near, far, farToNearRatio, numFrustums, logDepth, frustumCommandsList, is2D, scene.nearToFarDistance2D);
             this.createPotentiallyVisibleSet(scene);
         }
 
@@ -396,6 +362,4 @@ define([
             debugGlobeDepths[i].destroy();
         }
     };
-
-    return View;
-});
+export default View;

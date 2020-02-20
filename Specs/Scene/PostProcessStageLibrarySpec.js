@@ -1,36 +1,17 @@
-defineSuite([
-        'Scene/PostProcessStageLibrary',
-        'Core/Cartesian3',
-        'Core/defined',
-        'Core/destroyObject',
-        'Core/HeadingPitchRange',
-        'Core/HeadingPitchRoll',
-        'Core/Matrix4',
-        'Core/Transforms',
-        'Scene/Model',
-        'Renderer/Pass',
-        'Renderer/RenderState',
-        'ThirdParty/when',
-        'Specs/createCanvas',
-        'Specs/createScene',
-        'Specs/pollToPromise'
-    ], function(
-        PostProcessStageLibrary,
-        Cartesian3,
-        defined,
-        destroyObject,
-        HeadingPitchRange,
-        HeadingPitchRoll,
-        Matrix4,
-        Transforms,
-        Model,
-        Pass,
-        RenderState,
-        when,
-        createCanvas,
-        createScene,
-        pollToPromise) {
-    'use strict';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { HeadingPitchRange } from '../../Source/Cesium.js';
+import { HeadingPitchRoll } from '../../Source/Cesium.js';
+import { Matrix4 } from '../../Source/Cesium.js';
+import { Transforms } from '../../Source/Cesium.js';
+import { Model } from '../../Source/Cesium.js';
+import { PostProcessStageLibrary } from '../../Source/Cesium.js';
+import createCanvas from '../createCanvas.js';
+import createScene from '../createScene.js';
+import pollToPromise from '../pollToPromise.js';
+import ViewportPrimitive from '../ViewportPrimitive.js';
+import { when } from '../../Source/Cesium.js';
+
+describe('Scene/PostProcessStageLibrary', function() {
 
     var scene;
 
@@ -51,33 +32,8 @@ defineSuite([
         scene.postProcessStages.fxaa.enabled = false;
         scene.postProcessStages.bloom.enabled = false;
         scene.postProcessStages.ambientOcclusion.enabled = false;
+        scene.renderForSpecs();
     });
-
-    var ViewportPrimitive = function(fragmentShader) {
-        this._fs = fragmentShader;
-        this._command = undefined;
-    };
-
-    ViewportPrimitive.prototype.update = function(frameState) {
-        if (!defined(this._command)) {
-            this._command = frameState.context.createViewportQuadCommand(this._fs, {
-                renderState : RenderState.fromCache(),
-                pass : Pass.OPAQUE
-            });
-        }
-        frameState.commandList.push(this._command);
-    };
-
-    ViewportPrimitive.prototype.isDestroyed = function() {
-        return false;
-    };
-
-    ViewportPrimitive.prototype.destroy = function() {
-        if (defined(this._command)) {
-            this._command.shaderProgram = this._command.shaderProgram && this._command.shaderProgram.destroy();
-        }
-        return destroyObject(this);
-    };
 
     var model;
 

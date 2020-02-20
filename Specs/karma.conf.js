@@ -11,9 +11,10 @@ module.exports = function(config) {
 
         // frameworks to use
         // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-        frameworks : ['jasmine', 'requirejs', 'detectBrowsers'],
+        frameworks : ['jasmine', 'detectBrowsers'],
 
         client: {
+            captureConsole: false,
             jasmine: {
                 random: false
             }
@@ -26,17 +27,30 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files : [
-            'Specs/karma-main.js',
-            {pattern : 'Source/**', included : false},
-            {pattern : 'Specs/**', included : false}
+            { pattern: 'Specs/karma-main.js', included: true, type: 'module' },
+            { pattern: 'Source/**', included: false, type: 'module' },
+            { pattern: 'Specs/*.js', included: true, type: 'module' },
+            { pattern: 'Specs/Core/**', included: true, type: 'module' },
+            { pattern: 'Specs/Data/**', included: false },
+            { pattern: 'Specs/DataSources/**', included: true, type: 'module' },
+            { pattern: 'Specs/Renderer/**', included: true, type: 'module' },
+            { pattern: 'Specs/Scene/**', included: true, type: 'module' },
+            { pattern: 'Specs/ThirdParty/**', included: true, type: 'module' },
+            { pattern: 'Specs/Widgets/**', included: true, type: 'module' },
+            { pattern: 'Specs/TestWorkers/**', included: false }
         ],
 
         proxies : {
-            '/Data' : '/base/Specs/Data'
+            '/Data' : '/base/Specs/Data',
+            '/Specs/TestWorkers' : '/base/Specs/TestWorkers'
         },
 
         // list of files to exclude
-        exclude : [],
+        exclude: [
+            'Specs/SpecList.js',
+            'Specs/SpecRunner.js',
+            'Specs/spec-main.js'
+        ],
 
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
@@ -45,7 +59,8 @@ module.exports = function(config) {
         // test results reporter to use
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-        reporters : ['spec'],
+        reporters : ['spec', 'longest'],
+        longestSpecsToReport : 10,
 
         // web server port
         port : 9876,
@@ -55,7 +70,7 @@ module.exports = function(config) {
 
         // level of logging
         // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-        logLevel : config.LOG_INFO,
+        logLevel : config.LOG_ERROR,
 
         // enable / disable watching file and executing tests whenever any file changes
         autoWatch : false,
@@ -74,7 +89,11 @@ module.exports = function(config) {
             }
         },
 
-        browserNoActivityTimeout : 30000,
+        // Rediculous large values because travis is slow.
+        captureTimeout: 120000,
+        browserDisconnectTolerance: 3,
+        browserDisconnectTimeout: 120000,
+        browserNoActivityTimeout: 120000,
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits

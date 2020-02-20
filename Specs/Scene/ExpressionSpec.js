@@ -1,20 +1,12 @@
-defineSuite([
-        'Scene/Expression',
-        'Core/Cartesian2',
-        'Core/Cartesian3',
-        'Core/Cartesian4',
-        'Core/Color',
-        'Core/Math',
-        'Scene/ExpressionNodeType'
-    ], function(
-        Expression,
-        Cartesian2,
-        Cartesian3,
-        Cartesian4,
-        Color,
-        CesiumMath,
-        ExpressionNodeType) {
-    'use strict';
+import { Cartesian2 } from '../../Source/Cesium.js';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { Cartesian4 } from '../../Source/Cesium.js';
+import { Color } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { Expression } from '../../Source/Cesium.js';
+import { ExpressionNodeType } from '../../Source/Cesium.js';
+
+describe('Scene/Expression', function() {
 
     function MockFeature() {
         this._properties = {};
@@ -124,6 +116,30 @@ defineSuite([
         expect(function() {
             return new Expression('${height');
         }).toThrowRuntimeError();
+    });
+
+    it('evaluates variable to undefined if feature is undefined', function() {
+        var expression = new Expression('${height}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        expression = new Expression('${vector.x}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        expression = new Expression('${feature}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        expression = new Expression('${feature.vector}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        expression = new Expression('${vector["x"]}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        expression = new Expression('${feature["vector"]}');
+        expect(expression.evaluate(undefined)).toBeUndefined();
+
+        // Evaluating inside a string is an exception. "" is returned instead of "undefined"
+        expression = new Expression('\'${height}\'');
+        expect(expression.evaluate(undefined)).toBe('');
     });
 
     it('evaluates with defines', function() {
@@ -1493,6 +1509,8 @@ defineSuite([
 
         expression = new Expression('isExactClass("roof")');
         expect(expression.evaluate(feature)).toEqual(false);
+
+        expect(expression.evaluate(undefined)).toEqual(false);
     });
 
     it('throws if isExactClass takes an invalid number of arguments', function() {
@@ -1513,6 +1531,8 @@ defineSuite([
 
         var expression = new Expression('isClass("door") && isClass("building")');
         expect(expression.evaluate(feature)).toEqual(true);
+
+        expect(expression.evaluate(undefined)).toEqual(false);
     });
 
     it('throws if isClass takes an invalid number of arguments', function() {
@@ -1530,6 +1550,7 @@ defineSuite([
         feature.setClass('door');
         var expression = new Expression('getExactClassName()');
         expect(expression.evaluate(feature)).toEqual('door');
+        expect(expression.evaluate(undefined)).toBeUndefined();
     });
 
     it('throws if getExactClassName takes an invalid number of arguments', function() {
@@ -2016,7 +2037,7 @@ defineSuite([
         expect(expression.evaluate(undefined)).toEqual(new Cartesian3(0.0, 1.0, 2.0));
 
         expression = new Expression('log2(vec4(1.0, 2.0, 4.0, 8.0))');
-        expect(expression.evaluate(undefined)).toEqual(new Cartesian4(0.0, 1.0, 2.0, 3.0));
+        expect(expression.evaluate(undefined)).toEqualEpsilon(new Cartesian4(0.0, 1.0, 2.0, 3.0), CesiumMath.EPSILON10);
     });
 
     it('throws if log2 function takes an invalid number of arguments', function() {
@@ -2953,6 +2974,7 @@ defineSuite([
         expect(expression.evaluate(feature)).toEqual(0.0);
         feature.content.tileset.timeSinceLoad = 1.0;
         expect(expression.evaluate(feature)).toEqual(1.0);
+        expect(expression.evaluate(undefined)).toEqual(0.0);
     });
 
     it('gets shader function', function() {
@@ -3524,6 +3546,34 @@ defineSuite([
         expect(shaderExpression).toEqual(expected);
     });
 
+    it('gets shader expression for isNaN', function() {
+        var expression = new Expression('isNaN(1.0)');
+        var shaderExpression = expression.getShaderExpression('', {});
+        var expected = '(1.0 != 1.0)';
+        expect(shaderExpression).toEqual(expected);
+    });
+
+    it('gets shader expression for isFinite', function() {
+        var expression = new Expression('isFinite(1.0)');
+        var shaderExpression = expression.getShaderExpression('', {});
+        var expected = '(abs(1.0) < czm_infinity)';
+        expect(shaderExpression).toEqual(expected);
+    });
+
+    it('gets shader expression for null', function() {
+        var expression = new Expression('null');
+        var shaderExpression = expression.getShaderExpression('', {});
+        var expected = 'czm_infinity';
+        expect(shaderExpression).toEqual(expected);
+    });
+
+    it('gets shader expression for undefined', function() {
+        var expression = new Expression('undefined');
+        var shaderExpression = expression.getShaderExpression('', {});
+        var expected = 'czm_infinity';
+        expect(shaderExpression).toEqual(expected);
+    });
+
     it('throws when getting shader expression for regex', function() {
         var expression = new Expression('regExp("a").test("abc")');
         expect(function() {
@@ -3583,34 +3633,6 @@ defineSuite([
 
     it('throws when getting shader expression for variable in string', function() {
         var expression = new Expression('"${property}"');
-        expect(function() {
-            return expression.getShaderExpression('', {});
-        }).toThrowRuntimeError();
-    });
-
-    it('throws when getting shader expression for literal undefined', function() {
-        var expression = new Expression('undefined');
-        expect(function() {
-            return expression.getShaderExpression('', {});
-        }).toThrowRuntimeError();
-    });
-
-    it('throws when getting shader expression for literal null', function() {
-        var expression = new Expression('null');
-        expect(function() {
-            return expression.getShaderExpression('', {});
-        }).toThrowRuntimeError();
-    });
-
-    it('throws when getting shader expression for isNaN', function() {
-        var expression = new Expression('isNaN(1.0)');
-        expect(function() {
-            return expression.getShaderExpression('', {});
-        }).toThrowRuntimeError();
-    });
-
-    it('throws when getting shader expression for isFinite', function() {
-        var expression = new Expression('isFinite(1.0)');
         expect(function() {
             return expression.getShaderExpression('', {});
         }).toThrowRuntimeError();

@@ -1,50 +1,27 @@
-defineSuite([
-        'Scene/PointCloud3DTileContent',
-        'Core/Cartesian3',
-        'Core/Color',
-        'Core/ComponentDatatype',
-        'Core/defined',
-        'Core/HeadingPitchRange',
-        'Core/HeadingPitchRoll',
-        'Core/Math',
-        'Core/Matrix4',
-        'Core/PerspectiveFrustum',
-        'Core/Transforms',
-        'Renderer/Pass',
-        'Scene/Cesium3DTileStyle',
-        'Scene/ClippingPlane',
-        'Scene/ClippingPlaneCollection',
-        'Scene/DracoLoader',
-        'Scene/Expression',
-        'Specs/Cesium3DTilesTester',
-        'Specs/createCanvas',
-        'Specs/createScene',
-        'Specs/pollToPromise',
-        'ThirdParty/when'
-    ], function(
-        PointCloud3DTileContent,
-        Cartesian3,
-        Color,
-        ComponentDatatype,
-        defined,
-        HeadingPitchRange,
-        HeadingPitchRoll,
-        CesiumMath,
-        Matrix4,
-        PerspectiveFrustum,
-        Transforms,
-        Pass,
-        Cesium3DTileStyle,
-        ClippingPlane,
-        ClippingPlaneCollection,
-        DracoLoader,
-        Expression,
-        Cesium3DTilesTester,
-        createCanvas,
-        createScene,
-        pollToPromise,
-        when) {
-    'use strict';
+import { Cartesian3 } from '../../Source/Cesium.js';
+import { Color } from '../../Source/Cesium.js';
+import { ComponentDatatype } from '../../Source/Cesium.js';
+import { defined } from '../../Source/Cesium.js';
+import { HeadingPitchRange } from '../../Source/Cesium.js';
+import { HeadingPitchRoll } from '../../Source/Cesium.js';
+import { Math as CesiumMath } from '../../Source/Cesium.js';
+import { PerspectiveFrustum } from '../../Source/Cesium.js';
+import { Transforms } from '../../Source/Cesium.js';
+import { Pass } from '../../Source/Cesium.js';
+import { Cesium3DTilePass } from '../../Source/Cesium.js';
+import { Cesium3DTileRefine } from '../../Source/Cesium.js';
+import { Cesium3DTileStyle } from '../../Source/Cesium.js';
+import { ClippingPlane } from '../../Source/Cesium.js';
+import { ClippingPlaneCollection } from '../../Source/Cesium.js';
+import { DracoLoader } from '../../Source/Cesium.js';
+import { Expression } from '../../Source/Cesium.js';
+import Cesium3DTilesTester from '../Cesium3DTilesTester.js';
+import createCanvas from '../createCanvas.js';
+import createScene from '../createScene.js';
+import pollToPromise from '../pollToPromise.js';
+import { when } from '../../Source/Cesium.js';
+
+describe('Scene/PointCloud3DTileContent', function() {
 
     var scene;
     var centerLongitude = -1.31968;
@@ -332,6 +309,7 @@ defineSuite([
     });
 
     it('renders with debug color', function() {
+        CesiumMath.setRandomNumberSeed(0);
         return Cesium3DTilesTester.loadTileset(scene, pointCloudRGBUrl).then(function(tileset) {
             var color;
             expect(scene).toRenderAndCall(function(rgba) {
@@ -461,7 +439,7 @@ defineSuite([
 
             expect(scene).toPickAndCall(function(result) {
                 // Set culling to true
-                content._pointCloud.backFaceCulling = true;
+                tileset.pointCloudShading.backFaceCulling = true;
 
                 expect(scene).toPickAndCall(function(result) {
                     picked = result;
@@ -484,7 +462,7 @@ defineSuite([
                 }
 
                 // Set culling to false
-                content._pointCloud.backFaceCulling = false;
+                tileset.pointCloudShading.backFaceCulling = false;
 
                 expect(scene).toPickAndCall(function(result) {
                     picked = result;
@@ -517,6 +495,7 @@ defineSuite([
 
         return Cesium3DTilesTester.loadTileset(scene, pointCloudNoColorUrl).then(function(tileset) {
             tileset.pointCloudShading.eyeDomeLighting = false;
+            tileset.root.refine = Cesium3DTileRefine.REPLACE;
             postLoadCallback(scene, tileset);
             scene.destroyForSpecs();
         });
@@ -568,7 +547,7 @@ defineSuite([
             tileset.pointCloudShading.attenuation = true;
             tileset.pointCloudShading.geometricErrorScale = 1.0;
             tileset.pointCloudShading.maximumAttenuation = undefined;
-            tileset.pointCloudShading.baseResolution = CesiumMath.EPSILON20;
+            tileset.pointCloudShading.baseResolution = 0.20;
             tileset.maximumScreenSpaceError = 16;
             expect(scene).toRenderPixelCountAndCall(function(pixelCount) {
                 expect(pixelCount).toEqual(noAttenuationPixelCount);
@@ -579,9 +558,9 @@ defineSuite([
     it('modulates attenuation using the geometricErrorScale parameter', function() {
         return attenuationTest(function(scene, tileset) {
             tileset.pointCloudShading.attenuation = true;
-            tileset.pointCloudShading.geometricErrorScale = 0.0;
+            tileset.pointCloudShading.geometricErrorScale = 0.2;
             tileset.pointCloudShading.maximumAttenuation = undefined;
-            tileset.pointCloudShading.baseResolution = undefined;
+            tileset.pointCloudShading.baseResolution = 1.0;
             tileset.maximumScreenSpaceError = 1;
             expect(scene).toRenderPixelCountAndCall(function(pixelCount) {
                 expect(pixelCount).toEqual(noAttenuationPixelCount);
@@ -719,7 +698,9 @@ defineSuite([
 
             tileset.style.color = new Expression('color("blue", 0.5)');
             tileset.makeStyleDirty();
-            expect(scene).toRender([0, 0, 255, 255]);
+            expect(scene).toRenderAndCall(function(rgba) {
+                expect(rgba).toEqualEpsilon([0, 0, 255, 255], 5);
+            });
 
             var i;
             var commands = scene.frameState.commandList;
@@ -884,6 +865,7 @@ defineSuite([
             var tile = tileset.root;
             tile._isClipped = true;
             var content = tile.content;
+            var passOptions = Cesium3DTilePass.getPassOptions(Cesium3DTilePass.RENDER);
 
             var noClipFS = content._pointCloud._drawCommand.shaderProgram._fragmentShaderText;
             expect(noClipFS.indexOf('clip') !== -1).toBe(false);
@@ -897,7 +879,7 @@ defineSuite([
             tileset.clippingPlanes = clippingPlanes;
 
             clippingPlanes.update(scene.frameState);
-            tile.update(tileset, scene.frameState);
+            tile.update(tileset, scene.frameState, passOptions);
             var clipOneIntersectFS = content._pointCloud._drawCommand.shaderProgram._fragmentShaderText;
             expect(clipOneIntersectFS.indexOf('= clip(') !== -1).toBe(true);
             expect(clipOneIntersectFS.indexOf('float clip') !== -1).toBe(true);
@@ -905,7 +887,7 @@ defineSuite([
             clippingPlanes.unionClippingRegions = true;
 
             clippingPlanes.update(scene.frameState);
-            tile.update(tileset, scene.frameState);
+            tile.update(tileset, scene.frameState, passOptions);
             var clipOneUnionFS = content._pointCloud._drawCommand.shaderProgram._fragmentShaderText;
             expect(clipOneUnionFS.indexOf('= clip(') !== -1).toBe(true);
             expect(clipOneUnionFS.indexOf('float clip') !== -1).toBe(true);
@@ -914,7 +896,7 @@ defineSuite([
             clippingPlanes.add(new ClippingPlane(Cartesian3.UNIT_Y, 1.0));
 
             clippingPlanes.update(scene.frameState);
-            tile.update(tileset, scene.frameState);
+            tile.update(tileset, scene.frameState, passOptions);
             var clipTwoUnionFS = content._pointCloud._drawCommand.shaderProgram._fragmentShaderText;
             expect(clipTwoUnionFS.indexOf('= clip(') !== -1).toBe(true);
             expect(clipTwoUnionFS.indexOf('float clip') !== -1).toBe(true);
@@ -934,8 +916,7 @@ defineSuite([
             tileset.clippingPlanes = new ClippingPlaneCollection({
                 planes : [
                     clipPlane
-                ],
-                modelMatrix : Transforms.eastNorthUpToFixedFrame(tileset.boundingSphere.center)
+                ]
             });
 
             expect(scene).notToRender(color);

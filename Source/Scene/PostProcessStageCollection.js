@@ -1,40 +1,20 @@
-define([
-        '../Core/arraySlice',
-        '../Core/Check',
-        '../Core/defaultValue',
-        '../Core/defined',
-        '../Core/defineProperties',
-        '../Core/destroyObject',
-        '../Core/DeveloperError',
-        '../Core/PixelFormat',
-        '../Renderer/PixelDatatype',
-        '../Renderer/Sampler',
-        '../Renderer/Texture',
-        '../Renderer/TextureMagnificationFilter',
-        '../Renderer/TextureMinificationFilter',
-        '../Renderer/TextureWrap',
-        '../Shaders/PostProcessStages/PassThrough',
-        './PostProcessStageLibrary',
-        './PostProcessStageTextureCache'
-    ], function(
-        arraySlice,
-        Check,
-        defaultValue,
-        defined,
-        defineProperties,
-        destroyObject,
-        DeveloperError,
-        PixelFormat,
-        PixelDatatype,
-        Sampler,
-        Texture,
-        TextureMagnificationFilter,
-        TextureMinificationFilter,
-        TextureWrap,
-        PassThrough,
-        PostProcessStageLibrary,
-        PostProcessStageTextureCache) {
-    'use strict';
+import arraySlice from '../Core/arraySlice.js';
+import Check from '../Core/Check.js';
+import defined from '../Core/defined.js';
+import defineProperties from '../Core/defineProperties.js';
+import destroyObject from '../Core/destroyObject.js';
+import DeveloperError from '../Core/DeveloperError.js';
+import PixelFormat from '../Core/PixelFormat.js';
+import PixelDatatype from '../Renderer/PixelDatatype.js';
+import Sampler from '../Renderer/Sampler.js';
+import Texture from '../Renderer/Texture.js';
+import TextureMagnificationFilter from '../Renderer/TextureMagnificationFilter.js';
+import TextureMinificationFilter from '../Renderer/TextureMinificationFilter.js';
+import TextureWrap from '../Renderer/TextureWrap.js';
+import PassThrough from '../Shaders/PostProcessStages/PassThrough.js';
+import PostProcessStageLibrary from './PostProcessStageLibrary.js';
+import PostProcessStageTextureCache from './PostProcessStageTextureCache.js';
+import Tonemapper from './Tonemapper.js';
 
     var stackScratch = [];
 
@@ -59,14 +39,28 @@ define([
         var ao = PostProcessStageLibrary.createAmbientOcclusionStage();
         var bloom = PostProcessStageLibrary.createBloomStage();
 
+        // Auto-exposure is currently disabled because most shaders output a value in [0.0, 1.0].
+        // Some shaders, such as the atmosphere and ground atmosphere, output values slightly over 1.0.
+        this._autoExposureEnabled = false;
+        this._autoExposure = PostProcessStageLibrary.createAutoExposureStage();
+        this._tonemapping = undefined;
+        this._tonemapper = undefined;
+
+        // set tonemapper and tonemapping
+        this.tonemapper = Tonemapper.ACES;
+
+        var tonemapping = this._tonemapping;
+
+        fxaa.enabled = false;
         ao.enabled = false;
         bloom.enabled = false;
+        tonemapping.enabled = false; // will be enabled if necessary in update
 
         var textureCache = new PostProcessStageTextureCache(this);
 
         var stageNames = {};
         var stack = stackScratch;
-        stack.push(fxaa, ao, bloom);
+        stack.push(fxaa, ao, bloom, tonemapping);
         while (stack.length > 0) {
             var stage = stack.pop();
             stageNames[stage.name] = stage;
@@ -98,6 +92,7 @@ define([
         this._lastLength = undefined;
         this._aoEnabled = undefined;
         this._bloomEnabled = undefined;
+        this._tonemappingEnabled = undefined;
         this._fxaaEnabled = undefined;
 
         this._stagesRemoved = false;
@@ -128,10 +123,12 @@ define([
                 var fxaa = this._fxaa;
                 var ao = this._ao;
                 var bloom = this._bloom;
+                var tonemapping = this._tonemapping;
 
                 readyAndEnabled = readyAndEnabled || (fxaa.ready && fxaa.enabled);
                 readyAndEnabled = readyAndEnabled || (ao.ready && ao.enabled);
                 readyAndEnabled = readyAndEnabled || (bloom.ready && bloom.enabled);
+                readyAndEnabled = readyAndEnabled || (tonemapping.ready && tonemapping.enabled);
 
                 return readyAndEnabled;
             }
@@ -268,6 +265,11 @@ define([
                     }
                 }
 
+                var tonemapping = this._tonemapping;
+                if (tonemapping.enabled && tonemapping.ready) {
+                    return this.getOutputTexture(tonemapping.name);
+                }
+
                 var bloom = this._bloom;
                 if (bloom.enabled && bloom.ready) {
                     return this.getOutputTexture(bloom.name);
@@ -294,6 +296,9 @@ define([
                 var stages = arraySlice(this._stages);
                 while (stages.length > 0) {
                     var stage = stages.pop();
+                    if (!defined(stage)) {
+                        continue;
+                    }
                     if (defined(stage.selected)) {
                         return true;
                     }
@@ -305,6 +310,68 @@ define([
                     }
                 }
                 return false;
+            }
+        },
+        /**
+         * Gets and sets the tonemapping algorithm used when rendering with high dynamic range.
+         *
+         * @memberof PostProcessStageCollection.prototype
+         * @type {Tonemapper}
+         * @private
+         */
+        tonemapper : {
+            get : function() {
+                return this._tonemapper;
+            },
+            set : function(value) {
+                if (this._tonemapper === value) {
+                    return;
+                }
+                //>>includeStart('debug', pragmas.debug);
+                if (!Tonemapper.validate(value)) {
+                    throw new DeveloperError('tonemapper was set to an invalid value.');
+                }
+                //>>includeEnd('debug');
+
+                if (defined(this._tonemapping)) {
+                    delete this._stageNames[this._tonemapping.name];
+                    this._tonemapping.destroy();
+                }
+
+                var useAutoExposure = this._autoExposureEnabled;
+                var tonemapper;
+
+                switch(value) {
+                    case Tonemapper.REINHARD:
+                        tonemapper = PostProcessStageLibrary.createReinhardTonemappingStage(useAutoExposure);
+                        break;
+                    case Tonemapper.MODIFIED_REINHARD:
+                        tonemapper = PostProcessStageLibrary.createModifiedReinhardTonemappingStage(useAutoExposure);
+                        break;
+                    case Tonemapper.FILMIC:
+                        tonemapper = PostProcessStageLibrary.createFilmicTonemappingStage(useAutoExposure);
+                        break;
+                    default:
+                        tonemapper = PostProcessStageLibrary.createAcesTonemappingStage(useAutoExposure);
+                        break;
+                }
+
+                if (useAutoExposure) {
+                    var autoexposure = this._autoExposure;
+                    tonemapper.uniforms.autoExposure = function() {
+                        return autoexposure.outputTexture;
+                    };
+                }
+
+                this._tonemapper = value;
+                this._tonemapping = tonemapper;
+
+                if (defined(this._stageNames)) {
+                    this._stageNames[tonemapper.name] = tonemapper;
+                    tonemapper._textureCache = this._textureCache;
+                }
+
+                this._textureCacheDirty = true;
             }
         }
     });
@@ -468,7 +535,7 @@ define([
      *
      * @private
      */
-    PostProcessStageCollection.prototype.update = function(context, useLogDepth) {
+    PostProcessStageCollection.prototype.update = function(context, useLogDepth, useHdr) {
         removeStages(this);
 
         var previousActiveStages = this._activeStages;
@@ -501,13 +568,19 @@ define([
 
         var ao = this._ao;
         var bloom = this._bloom;
+        var autoexposure = this._autoExposure;
+        var tonemapping = this._tonemapping;
         var fxaa = this._fxaa;
+
+        tonemapping.enabled = useHdr;
 
         var aoEnabled = ao.enabled && ao._isSupported(context);
         var bloomEnabled = bloom.enabled && bloom._isSupported(context);
+        var tonemappingEnabled = tonemapping.enabled && tonemapping._isSupported(context);
         var fxaaEnabled = fxaa.enabled && fxaa._isSupported(context);
 
-        if (activeStagesChanged || this._textureCacheDirty || count !== this._lastLength || aoEnabled !== this._aoEnabled || bloomEnabled !== this._bloomEnabled || fxaaEnabled !== this._fxaaEnabled) {
+        if (activeStagesChanged || this._textureCacheDirty || count !== this._lastLength || aoEnabled !== this._aoEnabled ||
+            bloomEnabled !== this._bloomEnabled || tonemappingEnabled !== this._tonemappingEnabled || fxaaEnabled !== this._fxaaEnabled) {
             // The number of stages to execute has changed.
             // Update dependencies and recreate framebuffers.
             this._textureCache.updateDependencies();
@@ -515,6 +588,7 @@ define([
             this._lastLength = count;
             this._aoEnabled = aoEnabled;
             this._bloomEnabled = bloomEnabled;
+            this._tonemappingEnabled = tonemappingEnabled;
             this._fxaaEnabled = fxaaEnabled;
             this._textureCacheDirty = false;
         }
@@ -554,6 +628,11 @@ define([
         fxaa.update(context, useLogDepth);
         ao.update(context, useLogDepth);
         bloom.update(context, useLogDepth);
+        tonemapping.update(context, useLogDepth);
+
+        if (this._autoExposureEnabled) {
+            autoexposure.update(context, useLogDepth);
+        }
 
         length = stages.length;
         for (i = 0; i < length; ++i) {
@@ -570,6 +649,10 @@ define([
      */
     PostProcessStageCollection.prototype.clear = function(context) {
         this._textureCache.clear(context);
+
+        if (this._autoExposureEnabled) {
+            this._autoExposure.clear(context);
+        }
     };
 
     function getOutputTexture(stage) {
@@ -633,12 +716,16 @@ define([
         var fxaa = this._fxaa;
         var ao = this._ao;
         var bloom = this._bloom;
+        var autoexposure = this._autoExposure;
+        var tonemapping = this._tonemapping;
 
         var aoEnabled = ao.enabled && ao._isSupported(context);
         var bloomEnabled = bloom.enabled && bloom._isSupported(context);
+        var autoExposureEnabled = this._autoExposureEnabled;
+        var tonemappingEnabled = tonemapping.enabled && tonemapping._isSupported(context);
         var fxaaEnabled = fxaa.enabled && fxaa._isSupported(context);
 
-        if (!fxaaEnabled && !aoEnabled && !bloomEnabled && length === 0) {
+        if (!fxaaEnabled && !aoEnabled && !bloomEnabled && !tonemappingEnabled && length === 0) {
             return;
         }
 
@@ -650,6 +737,13 @@ define([
         if (bloomEnabled && bloom.ready) {
             execute(bloom, context, initialTexture, depthTexture, idTexture);
             initialTexture = getOutputTexture(bloom);
+        }
+        if (autoExposureEnabled && autoexposure.ready) {
+            execute(autoexposure, context, initialTexture, depthTexture, idTexture);
+        }
+        if (tonemappingEnabled && tonemapping.ready) {
+            execute(tonemapping, context, initialTexture, depthTexture, idTexture);
+            initialTexture = getOutputTexture(tonemapping);
         }
 
         var lastTexture = initialTexture;
@@ -724,10 +818,10 @@ define([
         this._fxaa.destroy();
         this._ao.destroy();
         this._bloom.destroy();
+        this._autoExposure.destroy();
+        this._tonemapping.destroy();
         this.removeAll();
         this._textureCache = this._textureCache && this._textureCache.destroy();
         return destroyObject(this);
     };
-
-    return PostProcessStageCollection;
-});
+export default PostProcessStageCollection;

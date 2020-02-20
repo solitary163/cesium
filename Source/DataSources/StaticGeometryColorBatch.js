@@ -1,34 +1,17 @@
-define([
-        '../Core/AssociativeArray',
-        '../Core/Cartesian3',
-        '../Core/Color',
-        '../Core/ColorGeometryInstanceAttribute',
-        '../Core/defined',
-        '../Core/DistanceDisplayCondition',
-        '../Core/DistanceDisplayConditionGeometryInstanceAttribute',
-        '../Core/OffsetGeometryInstanceAttribute',
-        '../Core/ShowGeometryInstanceAttribute',
-        '../Scene/Primitive',
-        './BoundingSphereState',
-        './ColorMaterialProperty',
-        './MaterialProperty',
-        './Property'
-    ], function(
-        AssociativeArray,
-        Cartesian3,
-        Color,
-        ColorGeometryInstanceAttribute,
-        defined,
-        DistanceDisplayCondition,
-        DistanceDisplayConditionGeometryInstanceAttribute,
-        OffsetGeometryInstanceAttribute,
-        ShowGeometryInstanceAttribute,
-        Primitive,
-        BoundingSphereState,
-        ColorMaterialProperty,
-        MaterialProperty,
-        Property) {
-    'use strict';
+import AssociativeArray from '../Core/AssociativeArray.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import Color from '../Core/Color.js';
+import ColorGeometryInstanceAttribute from '../Core/ColorGeometryInstanceAttribute.js';
+import defined from '../Core/defined.js';
+import DistanceDisplayCondition from '../Core/DistanceDisplayCondition.js';
+import DistanceDisplayConditionGeometryInstanceAttribute from '../Core/DistanceDisplayConditionGeometryInstanceAttribute.js';
+import OffsetGeometryInstanceAttribute from '../Core/OffsetGeometryInstanceAttribute.js';
+import ShowGeometryInstanceAttribute from '../Core/ShowGeometryInstanceAttribute.js';
+import Primitive from '../Scene/Primitive.js';
+import BoundingSphereState from './BoundingSphereState.js';
+import ColorMaterialProperty from './ColorMaterialProperty.js';
+import MaterialProperty from './MaterialProperty.js';
+import Property from './Property.js';
 
     var colorScratch = new Color();
     var distanceDisplayConditionScratch = new DistanceDisplayCondition();
@@ -109,7 +92,9 @@ define([
                 this.subscriptions.remove(id);
                 this.showsUpdated.remove(id);
             }
+            return true;
         }
+        return false;
     };
 
     Batch.prototype.update = function(time) {
@@ -117,7 +102,6 @@ define([
         var removedCount = 0;
         var primitive = this.primitive;
         var primitives = this.primitives;
-        var attributes;
         var i;
 
         if (this.createPrimitive) {
@@ -129,24 +113,6 @@ define([
                         this.oldPrimitive = primitive;
                     } else {
                         primitives.remove(primitive);
-                    }
-                }
-
-                for (i = 0; i < geometriesLength; i++) {
-                    var geometryItem = geometries[i];
-                    var originalAttributes = geometryItem.attributes;
-                    attributes = this.attributes.get(geometryItem.id.id);
-
-                    if (defined(attributes)) {
-                        if (defined(originalAttributes.show)) {
-                            attributes.show = originalAttributes.show.value;
-                        }
-                        if (defined(originalAttributes.color)) {
-                            attributes.color = originalAttributes.color.value;
-                        }
-                        if (defined(originalAttributes.depthFailColor)) {
-                            attributes.depthFailColor = originalAttributes.depthFailColor.value;
-                        }
                     }
                 }
 
@@ -165,7 +131,7 @@ define([
                 primitive = new Primitive({
                     show : false,
                     asynchronous : true,
-                    geometryInstances : geometries,
+                    geometryInstances : geometries.slice(),
                     appearance : new this.appearanceType({
                         translucent : this.translucent,
                         closed : this.closed
@@ -210,7 +176,7 @@ define([
                 var updater = updatersWithAttributes[i];
                 var instance = this.geometry.get(updater.id);
 
-                attributes = this.attributes.get(instance.id.id);
+                var attributes = this.attributes.get(instance.id.id);
                 if (!defined(attributes)) {
                     attributes = primitive.getGeometryInstanceAttributes(instance.id);
                     this.attributes.set(instance.id.id, attributes);
@@ -288,6 +254,7 @@ define([
             var currentShow = attributes.show[0] === 1;
             if (show !== currentShow) {
                 attributes.show = ShowGeometryInstanceAttribute.toValue(show, attributes.show);
+                instance.attributes.show.value[0] = attributes.show[0];
             }
         }
         this.showsUpdated.removeAll();
@@ -372,8 +339,8 @@ define([
                 if (item.updaters.length === 0) {
                     items.splice(i, 1);
                     item.destroy();
-                    return true;
                 }
+                return true;
             }
         }
         return false;
@@ -477,6 +444,4 @@ define([
         removeAllPrimitives(this._solidItems);
         removeAllPrimitives(this._translucentItems);
     };
-
-    return StaticGeometryColorBatch;
-});
+export default StaticGeometryColorBatch;

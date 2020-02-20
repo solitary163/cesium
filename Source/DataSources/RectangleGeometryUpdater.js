@@ -1,60 +1,28 @@
-define([
-        '../Core/ApproximateTerrainHeights',
-        '../Core/Cartesian3',
-        '../Core/Cartographic',
-        '../Core/Check',
-        '../Core/Color',
-        '../Core/ColorGeometryInstanceAttribute',
-        '../Core/defined',
-        '../Core/DeveloperError',
-        '../Core/DistanceDisplayConditionGeometryInstanceAttribute',
-        '../Core/Ellipsoid',
-        '../Core/GeometryInstance',
-        '../Core/GeometryOffsetAttribute',
-        '../Core/Iso8601',
-        '../Core/OffsetGeometryInstanceAttribute',
-        '../Core/Rectangle',
-        '../Core/RectangleGeometry',
-        '../Core/RectangleOutlineGeometry',
-        '../Core/ShowGeometryInstanceAttribute',
-        '../Scene/GroundPrimitive',
-        '../Scene/HeightReference',
-        '../Scene/MaterialAppearance',
-        '../Scene/PerInstanceColorAppearance',
-        './ColorMaterialProperty',
-        './DynamicGeometryUpdater',
-        './GeometryUpdater',
-        './GroundGeometryUpdater',
-        './Property'
-    ], function(
-        ApproximateTerrainHeights,
-        Cartesian3,
-        Cartographic,
-        Check,
-        Color,
-        ColorGeometryInstanceAttribute,
-        defined,
-        DeveloperError,
-        DistanceDisplayConditionGeometryInstanceAttribute,
-        Ellipsoid,
-        GeometryInstance,
-        GeometryOffsetAttribute,
-        Iso8601,
-        OffsetGeometryInstanceAttribute,
-        Rectangle,
-        RectangleGeometry,
-        RectangleOutlineGeometry,
-        ShowGeometryInstanceAttribute,
-        GroundPrimitive,
-        HeightReference,
-        MaterialAppearance,
-        PerInstanceColorAppearance,
-        ColorMaterialProperty,
-        DynamicGeometryUpdater,
-        GeometryUpdater,
-        GroundGeometryUpdater,
-        Property) {
-    'use strict';
+import ApproximateTerrainHeights from '../Core/ApproximateTerrainHeights.js';
+import Cartesian3 from '../Core/Cartesian3.js';
+import Cartographic from '../Core/Cartographic.js';
+import Check from '../Core/Check.js';
+import Color from '../Core/Color.js';
+import ColorGeometryInstanceAttribute from '../Core/ColorGeometryInstanceAttribute.js';
+import defined from '../Core/defined.js';
+import DeveloperError from '../Core/DeveloperError.js';
+import DistanceDisplayConditionGeometryInstanceAttribute from '../Core/DistanceDisplayConditionGeometryInstanceAttribute.js';
+import Ellipsoid from '../Core/Ellipsoid.js';
+import GeometryInstance from '../Core/GeometryInstance.js';
+import Iso8601 from '../Core/Iso8601.js';
+import OffsetGeometryInstanceAttribute from '../Core/OffsetGeometryInstanceAttribute.js';
+import Rectangle from '../Core/Rectangle.js';
+import RectangleGeometry from '../Core/RectangleGeometry.js';
+import RectangleOutlineGeometry from '../Core/RectangleOutlineGeometry.js';
+import ShowGeometryInstanceAttribute from '../Core/ShowGeometryInstanceAttribute.js';
+import HeightReference from '../Scene/HeightReference.js';
+import MaterialAppearance from '../Scene/MaterialAppearance.js';
+import PerInstanceColorAppearance from '../Scene/PerInstanceColorAppearance.js';
+import ColorMaterialProperty from './ColorMaterialProperty.js';
+import DynamicGeometryUpdater from './DynamicGeometryUpdater.js';
+import GeometryUpdater from './GeometryUpdater.js';
+import GroundGeometryUpdater from './GroundGeometryUpdater.js';
+import Property from './Property.js';
 
     var scratchColor = new Color();
     var defaultOffset = Cartesian3.ZERO;
@@ -202,10 +170,6 @@ define([
         return !defined(rectangle.coordinates) || GeometryUpdater.prototype._isHidden.call(this, entity, rectangle);
     };
 
-    RectangleGeometryUpdater.prototype._isOnTerrain = function(entity, rectangle) {
-        return this._fillEnabled && !defined(rectangle.height) && !defined(rectangle.extrudedHeight) && GroundPrimitive.isSupported(this._scene);
-    };
-
     RectangleGeometryUpdater.prototype._isDynamic = function(entity, rectangle) {
         return !rectangle.coordinates.isConstant || //
                !Property.isConstant(rectangle.height) || //
@@ -221,10 +185,13 @@ define([
     RectangleGeometryUpdater.prototype._setStaticOptions = function(entity, rectangle) {
         var isColorMaterial = this._materialProperty instanceof ColorMaterialProperty;
 
-        var height = rectangle.height;
-        var heightReference = rectangle.heightReference;
-        var extrudedHeight = rectangle.extrudedHeight;
-        var extrudedHeightReference = rectangle.extrudedHeightReference;
+        var heightValue = Property.getValueOrUndefined(rectangle.height, Iso8601.MINIMUM_VALUE);
+        var heightReferenceValue = Property.getValueOrDefault(rectangle.heightReference, Iso8601.MINIMUM_VALUE, HeightReference.NONE);
+        var extrudedHeightValue = Property.getValueOrUndefined(rectangle.extrudedHeight, Iso8601.MINIMUM_VALUE);
+        var extrudedHeightReferenceValue = Property.getValueOrDefault(rectangle.extrudedHeightReference, Iso8601.MINIMUM_VALUE, HeightReference.NONE);
+        if (defined(extrudedHeightValue) && !defined(heightValue)) {
+            heightValue = 0;
+        }
 
         var options = this._options;
         options.vertexFormat = isColorMaterial ? PerInstanceColorAppearance.VERTEX_FORMAT : MaterialAppearance.MaterialSupport.TEXTURED.vertexFormat;
@@ -232,21 +199,15 @@ define([
         options.granularity = Property.getValueOrUndefined(rectangle.granularity, Iso8601.MINIMUM_VALUE);
         options.stRotation = Property.getValueOrUndefined(rectangle.stRotation, Iso8601.MINIMUM_VALUE);
         options.rotation = Property.getValueOrUndefined(rectangle.rotation, Iso8601.MINIMUM_VALUE);
-        options.offsetAttribute = GroundGeometryUpdater.computeGeometryOffsetAttribute(heightReference, extrudedHeightReference, Iso8601.MINIMUM_VALUE);
-        options.height = GroundGeometryUpdater.getGeometryHeight(height, heightReference, Iso8601.MINIMUM_VALUE);
+        options.offsetAttribute = GroundGeometryUpdater.computeGeometryOffsetAttribute(heightValue, heightReferenceValue, extrudedHeightValue, extrudedHeightReferenceValue);
+        options.height = GroundGeometryUpdater.getGeometryHeight(heightValue, heightReferenceValue);
 
-        var extrudedHeightValue = GroundGeometryUpdater.getGeometryExtrudedHeight(extrudedHeight, extrudedHeightReference, Iso8601.MINIMUM_VALUE);
+        extrudedHeightValue = GroundGeometryUpdater.getGeometryExtrudedHeight(extrudedHeightValue, extrudedHeightReferenceValue);
         if (extrudedHeightValue === GroundGeometryUpdater.CLAMP_TO_GROUND) {
-            extrudedHeightValue = ApproximateTerrainHeights.getApproximateTerrainHeights(RectangleGeometry.computeRectangle(options, scratchRectangle)).minimumTerrainHeight;
+            extrudedHeightValue = ApproximateTerrainHeights.getMinimumMaximumHeights(RectangleGeometry.computeRectangle(options, scratchRectangle)).minimumTerrainHeight;
         }
 
         options.extrudedHeight = extrudedHeightValue;
-    };
-
-    RectangleGeometryUpdater.prototype._getIsClosed = function(options) {
-        var height = options.height;
-        var extrudedHeight = options.extrudedHeight;
-        return height === 0 || defined(extrudedHeight) && extrudedHeight !== height;
     };
 
     RectangleGeometryUpdater.DynamicGeometryUpdater = DynamicRectangleGeometryUpdater;
@@ -269,25 +230,26 @@ define([
 
     DynamicRectangleGeometryUpdater.prototype._setOptions = function(entity, rectangle, time) {
         var options = this._options;
-        var height = rectangle.height;
-        var heightReference = rectangle.heightReference;
-        var extrudedHeight = rectangle.extrudedHeight;
-        var extrudedHeightReference = rectangle.extrudedHeightReference;
+        var heightValue = Property.getValueOrUndefined(rectangle.height, time);
+        var heightReferenceValue = Property.getValueOrDefault(rectangle.heightReference, time, HeightReference.NONE);
+        var extrudedHeightValue = Property.getValueOrUndefined(rectangle.extrudedHeight, time);
+        var extrudedHeightReferenceValue = Property.getValueOrDefault(rectangle.extrudedHeightReference, time, HeightReference.NONE);
+        if (defined(extrudedHeightValue) && !defined(heightValue)) {
+            heightValue = 0;
+        }
 
         options.rectangle = Property.getValueOrUndefined(rectangle.coordinates, time, options.rectangle);
         options.granularity = Property.getValueOrUndefined(rectangle.granularity, time);
         options.stRotation = Property.getValueOrUndefined(rectangle.stRotation, time);
         options.rotation = Property.getValueOrUndefined(rectangle.rotation, time);
-        options.offsetAttribute = GroundGeometryUpdater.computeGeometryOffsetAttribute(heightReference, extrudedHeightReference, time);
-        options.height = GroundGeometryUpdater.getGeometryHeight(height, heightReference, time);
+        options.offsetAttribute = GroundGeometryUpdater.computeGeometryOffsetAttribute(heightValue, heightReferenceValue, extrudedHeightValue, extrudedHeightReferenceValue);
+        options.height = GroundGeometryUpdater.getGeometryHeight(heightValue, heightReferenceValue);
 
-        var extrudedHeightValue = GroundGeometryUpdater.getGeometryExtrudedHeight(extrudedHeight, extrudedHeightReference, time);
+        extrudedHeightValue = GroundGeometryUpdater.getGeometryExtrudedHeight(extrudedHeightValue, extrudedHeightReferenceValue);
         if (extrudedHeightValue === GroundGeometryUpdater.CLAMP_TO_GROUND) {
-            extrudedHeightValue = ApproximateTerrainHeights.getApproximateTerrainHeights(RectangleGeometry.computeRectangle(options, scratchRectangle)).minimumTerrainHeight;
+            extrudedHeightValue = ApproximateTerrainHeights.getMinimumMaximumHeights(RectangleGeometry.computeRectangle(options, scratchRectangle)).minimumTerrainHeight;
         }
 
         options.extrudedHeight = extrudedHeightValue;
     };
-
-    return RectangleGeometryUpdater;
-});
+export default RectangleGeometryUpdater;

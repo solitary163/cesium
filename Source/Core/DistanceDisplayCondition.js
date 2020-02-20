@@ -1,14 +1,7 @@
-define([
-        './defaultValue',
-        './defined',
-        './defineProperties',
-        './DeveloperError'
-    ], function(
-        defaultValue,
-        defined,
-        defineProperties,
-        DeveloperError) {
-    'use strict';
+import defaultValue from './defaultValue.js';
+import defined from './defined.js';
+import defineProperties from './defineProperties.js';
+import DeveloperError from './DeveloperError.js';
 
     /**
      * Determines visibility based on the distance to the camera.
@@ -21,7 +14,7 @@ define([
      *
      * @example
      * // Make a billboard that is only visible when the distance to the camera is between 10 and 20 meters.
-     * billboard.distanceDisplayCondition = new DistanceDisplayCondition(10.0 20.0);
+     * billboard.distanceDisplayCondition = new Cesium.DistanceDisplayCondition(10.0, 20.0);
      */
     function DistanceDisplayCondition(near, far) {
         near = defaultValue(near, 0.0);
@@ -175,6 +168,4 @@ define([
     DistanceDisplayCondition.prototype.equals = function(other) {
         return DistanceDisplayCondition.equals(this, other);
     };
-
-    return DistanceDisplayCondition;
-});
+export default DistanceDisplayCondition;
